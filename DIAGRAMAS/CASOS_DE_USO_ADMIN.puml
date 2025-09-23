@@ -1,0 +1,41 @@
+@startuml
+top to bottom direction
+actor Admin
+
+rectangle "Plataforma de Apuntes — Modo Admin" {
+
+  package "Gestión general" {
+    usecase "Iniciar/Cerrar sesión" as UA_Login
+    usecase "Buscar/Ver apuntes" as UA_Browse
+    usecase "Ver reportes" as UA_Reportes
+  }
+
+  package "Moderación de apuntes" {
+    usecase "Moderar apuntes" as UA_ModerarNotas
+    usecase "Cambiar estado" as UA_CambiarEstado
+    usecase "Registrar decisión" as UA_RegistrarNotas
+  }
+
+  package "Moderación de comentarios" {
+    usecase "Moderar comentarios" as UA_ModerarCom
+    usecase "Ocultar/Mostrar" as UA_ToggleCom
+    usecase "Registrar decisión" as UA_RegistrarCom
+  }
+}
+
+' Asociaciones directas del actor
+Admin --> UA_Login
+Admin --> UA_Browse
+Admin --> UA_Reportes
+Admin --> UA_ModerarNotas
+Admin --> UA_ModerarCom
+
+' include
+UA_ModerarNotas .> UA_RegistrarNotas : <<include>>
+UA_ModerarCom   .> UA_RegistrarCom   : <<include>>
+
+' extend
+UA_CambiarEstado .> UA_ModerarNotas : <<extend>>
+UA_ToggleCom     .> UA_ModerarCom   : <<extend>>
+
+@enduml

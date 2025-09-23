@@ -1,0 +1,45 @@
+@startuml
+left to right direction
+actor Estudiante
+
+
+rectangle "Plataforma de Apuntes" {
+usecase "Registrar cuenta" as UC_Register
+usecase "Iniciar/Cerrar sesión" as UC_Login
+usecase "Buscar/Filtrar apuntes" as UC_Buscar
+usecase "Ver ficha de apunte" as UC_Ver
+usecase "Descargar/Visualizar" as UC_Download
+usecase "Subir apunte" as UC_Subir
+usecase "Validar metadatos" as UC_Validar
+usecase "Editar/Eliminar apunte propio" as UC_Editar
+usecase "Valorar apunte" as UC_Valorar
+usecase "Comentar apunte" as UC_Comentar
+usecase "Reportar contenido" as UC_Reportar
+usecase "Ver mis aportes" as UC_Mis
+}
+
+
+Estudiante --> UC_Register
+Estudiante --> UC_Login
+Estudiante --> UC_Buscar
+Estudiante --> UC_Ver
+Estudiante --> UC_Download
+Estudiante --> UC_Subir
+Estudiante --> UC_Editar
+Estudiante --> UC_Valorar
+Estudiante --> UC_Comentar
+Estudiante --> UC_Reportar
+Estudiante --> UC_Mis
+
+
+' include: pasos comunes
+UC_Subir .> UC_Validar : <<include>>
+UC_Download .> UC_Ver : <<include>>
+
+
+' extend: acciones opcionales desde la ficha
+UC_Valorar .> UC_Ver : <<extend>>
+UC_Comentar .> UC_Ver : <<extend>>
+UC_Reportar .> UC_Ver : <<extend>>
+UC_Editar .> UC_Mis : <<extend>> [si es autor]
+@enduml
