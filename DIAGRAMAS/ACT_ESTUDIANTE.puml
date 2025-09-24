@@ -1,0 +1,52 @@
+@startuml
+skinparam dpi 200
+skinparam shadowing false
+skinparam DefaultFontSize 14
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderThickness 1.2
+skinparam ArrowThickness 1.2
+
+start
+:Estudiante busca apunte;
+:Aplica filtros (asignatura, tema, semestre, tags);
+:Sistema lista resultados;
+
+if (¿Hay resultados?) then (Sí)
+  :Selecciona apunte;
+  :Ver ficha de apunte;
+
+  if (¿Valorar?) then (Sí)
+    :Registrar valoración (1 voto por usuario);
+    :Recalcular promedio y votos;
+  else (No)
+  endif
+
+  if (¿Comentar?) then (Sí)
+    :Crear comentario;
+    if (¿Moderación previa activa?) then (Sí)
+      :Comentario queda PENDIENTE;
+    else (No)
+      :Comentario queda VISIBLE;
+    endif
+  else (No)
+  endif
+
+  if (¿Reportar?) then (Sí)
+    :Crear reporte sobre apunte/comentario;
+    :Notificar a cola de moderación (admin);
+  else (Ninguna)
+  endif
+
+  if (¿Descargar?) then (Sí)
+    :Incrementar contador de descargas;
+    :Mostrar/descargar archivo;
+  else (No)
+    :Volver a resultados;
+  endif
+
+else (No)
+  :Mostrar mensaje "sin resultados";
+endif
+
+stop
+@enduml

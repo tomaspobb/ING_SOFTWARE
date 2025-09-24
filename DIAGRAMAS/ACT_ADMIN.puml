@@ -1,0 +1,61 @@
+@startuml
+' ======== ACT ADMIN — DECISIONES EN ROMBO (FINAL) ========
+skinparam dpi 200
+skinparam shadowing false
+skinparam DefaultFontSize 14
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderThickness 1.2
+skinparam ArrowThickness 1.2
+
+start
+:Abrir panel de moderacion;
+:Ver cola de pendientes (apuntes/comentarios);
+
+if ("Hay pendientes?") then (Si)
+  :Seleccionar elemento;
+
+  if ("Es apunte?") then (Si)
+    :Revisar apunte;
+
+    if ("Aprobar?") then (Si)
+      :Estado = PUBLICADO;
+    else (No)
+      if ("Rechazar?") then (Si)
+        :Estado = RECHAZADO;
+      else (No)
+        if ("Observar?") then (Si)
+          :Estado = OBSERVADO;
+        else (No)
+          if ("Ocultar/Mostrar?") then (Si)
+            :Estado = OCULTO / PUBLICADO;
+          endif
+        endif
+      endif
+    endif
+
+  else (Comentario)
+    :Revisar comentario;
+
+    if ("Mostrar?") then (Si)
+      :Comentario = VISIBLE;
+    else (No)
+      if ("Ocultar?") then (Si)
+        :Comentario = OCULTO;
+      else (No)
+        if ("Rechazar/Eliminar?") then (Si)
+          :Comentario = NO visible / Eliminado;
+        endif
+      endif
+    endif
+  endif
+
+  :Registrar decision;
+  :Registrar en historial de moderacion;
+  :Volver a pendientes;
+
+else (No)
+  :Sin pendientes / Revisar reportes cerrados;
+endif
+
+stop
+@enduml
