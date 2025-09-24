@@ -37,15 +37,19 @@ export const authOptions: NextAuthOptions = {
   providers: [
     AzureADProvider({
       clientId: process.env.AZURE_AD_CLIENT_ID!,
-      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!, // debe ser el VALUE real
-      // SIN tenantId => multitenant
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
+      // SIN tenantId => multitenant (si quieres forzar uno, agrega tenantId)
       authorization: { params: { prompt: "select_account" } },
     }),
   ],
 
   session: { strategy: "jwt" },
 
-  pages: { error: "/auth/error" },
+  // 👉 MUY IMPORTANTE: cuando NextAuth necesite “pantalla de login”, te manda a "/"
+  pages: {
+    signIn: "/",          // tu GateHero
+    error: "/auth/error", // opcional, deja tu página de error si la tienes
+  },
 
   callbacks: {
     async signIn({ profile, account }) {
@@ -55,7 +59,6 @@ export const authOptions: NextAuthOptions = {
       const lower = email.toLowerCase();
       const domain = lower.split("@")[1];
 
-      // DEMO: permite cualquier dominio para que tu amigo entre
       if (!DEMO_ALLOW_ANY) {
         const allowed = !!domain && ALLOWED_DOMAINS.includes(domain);
         if (!allowed) return `${BASE_URL}/auth/error?error=DomainNotAllowed`;
@@ -70,7 +73,6 @@ export const authOptions: NextAuthOptions = {
         if (mail) token.email = mail.toLowerCase();
         token.name = (profile as any).name ?? token.name;
       }
-      // marca si es admin según ADMIN_EMAILS
       (token as any).isAdmin = token?.email
         ? ADMIN_EMAILS.includes((token.email as string).toLowerCase())
         : false;

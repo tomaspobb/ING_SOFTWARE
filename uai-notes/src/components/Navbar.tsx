@@ -1,99 +1,109 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEditorMode } from "./EditorModeProvider";
-import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react"; // ícono puerta de salida
 
 export default function Navbar() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/auth")) return null; // ⟵ Oculta navbar en el gate
-
   const { data: session, status } = useSession();
-  const isAuthed = status === "authenticated";
-  const loading = status === "loading";
-  const isAdmin = Boolean((session as any)?.isAdmin);
+  const { editorMode, setEditorMode } = useEditorMode();
 
-  // Switch Editor (solo admin)
-  let editorSwitch: React.ReactNode = null;
-  try {
-    if (isAuthed && isAdmin) {
-      const { editorMode, setEditorMode } = useEditorMode();
-      editorSwitch = (
-        <div className="form-check form-switch me-2">
-          <input
-            id="editorSwitch"
-            className="form-check-input"
-            type="checkbox"
-            role="switch"
-            checked={editorMode}
-            onChange={(e) => setEditorMode(e.target.checked)}
-          />
-          <label className="form-check-label small" htmlFor="editorSwitch">
-            Editor
-          </label>
-        </div>
-      );
-    }
-  } catch {}
+  const isAuthed = status === "authenticated";
+  const loading  = status === "loading";
+  const isAdmin  = Boolean((session as any)?.isAdmin);
+
+  // Oculta navbar en el home sin sesión (landing bonita)
+  if (!isAuthed && pathname === "/") return null;
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <div className="nv-navbar-wrap sticky-top">
-      <nav className="navbar navbar-expand-lg nv-navbar">
-        <div className="container">
-          {/* Marca → /apuntes si hay sesión; si no, al gate */}
-          <a
-            className="navbar-brand fw-bold brand-gradient"
-            href={isAuthed ? "/apuntes" : "/auth"}
-            aria-label="Notivium"
-          >
-            Notivium
-          </a>
+      <nav className="navbar nv-navbar" role="navigation" aria-label="Principal">
+        <div className="container-nv d-flex align-items-center justify-content-between gap-3">
 
-          <button
-            className="navbar-toggler border-0"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#nvNav"
-            aria-controls="nvNav"
-            aria-expanded="false"
-            aria-label="Alternar navegación"
-          >
-            <span className="navbar-toggler-icon" />
-          </button>
+          {/* IZQUIERDA: brand + links */}
+          <div className="d-flex align-items-center gap-3">
+            <Link
+              href={isAuthed ? "/apuntes" : "/"}
+              className="navbar-brand nv-brand"
+              aria-label="Notivium"
+            >
+              Notivium
+            </Link>
 
-          <div id="nvNav" className="collapse navbar-collapse">
             {isAuthed && (
-              <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                <li className="nav-item"><a className="nav-link" href="/apuntes">Apuntes</a></li>
-                <li className="nav-item"><a className="nav-link" href="/ranking">Ranking</a></li>
+              <ul className="navbar-nav d-flex flex-row gap-2">
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link nv-link ${isActive("/apuntes") ? "active" : ""}`}
+                    href="/apuntes"
+                    aria-current={isActive("/apuntes") ? "page" : undefined}
+                  >
+                    Apuntes
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link nv-link ${isActive("/ranking") ? "active" : ""}`}
+                    href="/ranking"
+                    aria-current={isActive("/ranking") ? "page" : undefined}
+                  >
+                    Ranking
+                  </Link>
+                </li>
               </ul>
             )}
+          </div>
 
-            <div className="ms-auto d-flex align-items-center gap-2">
-              {loading ? (
-                <span className="text-secondary">Cargando…</span>
-              ) : isAuthed ? (
-                <>
-                  {editorSwitch}
-                  <span className="text-secondary small d-none d-md-inline nv-ellipsis-1">
-                    {session?.user?.name ?? session?.user?.email}
-                  </span>
-                  <button
-                    className="btn btn-outline-light btn-sm btn-pill"
-                    onClick={() => signOut({ callbackUrl: "/auth" })}
-                  >
-                    Cerrar sesión
-                  </button>
-                </>
-              ) : (
+          {/* DERECHA: user + acciones */}
+          <div className="d-flex align-items-center gap-2">
+            {loading ? (
+              <span className="text-secondary">Cargando…</span>
+            ) : isAuthed ? (
+              <>
+                {isAdmin && (
+                  <div className="form-check form-switch me-2 text-white opacity-90">
+                    <input
+                      id="editorSwitch"
+                      className="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      checked={editorMode}
+                      onChange={(e) => setEditorMode(e.target.checked)}
+                    />
+                    <label className="form-check-label small ms-1" htmlFor="editorSwitch">
+                      Editor
+                    </label>
+                  </div>
+                )}
+
+                <span className="nv-username d-none d-sm-inline">
+                  {session?.user?.name ?? session?.user?.email}
+                </span>
+
+                {/* Botón de salida: ícono circular */}
                 <button
-                  className="btn btn-light btn-sm btn-pill"
-                  onClick={() => signIn("azure-ad", { callbackUrl: "/apuntes" })}
+                  className="nv-logout-btn"
+                  onClick={() => signOut({ redirect: true, callbackUrl: "/" })}
+                  aria-label="Cerrar sesión"
+                  title="Cerrar sesión"
                 >
-                  Ingresar con Microsoft
+                  <LogOut size={18} />
                 </button>
-              )}
-            </div>
+              </>
+            ) : (
+              <button
+                className="btn btn-light btn-sm btn-pill"
+                onClick={() => signIn("azure-ad", { callbackUrl: "/apuntes" })}
+              >
+                Ingresar con Microsoft
+              </button>
+            )}
           </div>
         </div>
       </nav>
