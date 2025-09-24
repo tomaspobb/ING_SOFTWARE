@@ -1,41 +1,64 @@
 @startuml
-top to bottom direction
-actor Admin
+' ======== ACT ADMIN COMPLETO ========
+skinparam dpi 200
+skinparam shadowing false
+skinparam DefaultFontSize 14
+skinparam ActivityBackgroundColor white
+skinparam ActivityBorderThickness 1.2
+skinparam ArrowThickness 1.2
 
-rectangle "Plataforma de Apuntes — Modo Admin" {
+start
+:Iniciar sesión como Admin;
+:Buscar/Ver apuntes;
+:Acceder al panel de moderación;
+:Ver cola de pendientes (apuntes/comentarios);
 
-  package "Gestión general" {
-    usecase "Iniciar/Cerrar sesión" as UA_Login
-    usecase "Buscar/Ver apuntes" as UA_Browse
-    usecase "Ver reportes" as UA_Reportes
-  }
+if ("¿Hay pendientes?") then (Sí)
+  :Seleccionar elemento;
 
-  package "Moderación de apuntes" {
-    usecase "Moderar apuntes" as UA_ModerarNotas
-    usecase "Cambiar estado" as UA_CambiarEstado
-    usecase "Registrar decisión" as UA_RegistrarNotas
-  }
+  if ("¿Es apunte?") then (Sí)
+    :Revisar apunte;
 
-  package "Moderación de comentarios" {
-    usecase "Moderar comentarios" as UA_ModerarCom
-    usecase "Ocultar/Mostrar" as UA_ToggleCom
-    usecase "Registrar decisión" as UA_RegistrarCom
-  }
-}
+    if ("¿Aprobar?") then (Sí)
+      :Estado = PUBLICADO;
+    else (No)
+      if ("¿Rechazar?") then (Sí)
+        :Estado = RECHAZADO;
+      else (No)
+        if ("¿Observar?") then (Sí)
+          :Estado = OBSERVADO;
+        else (No)
+          if ("¿Ocultar/Mostrar?") then (Sí)
+            :Estado = OCULTO / PUBLICADO;
+          endif
+        endif
+      endif
+    endif
 
-' Asociaciones directas del actor
-Admin --> UA_Login
-Admin --> UA_Browse
-Admin --> UA_Reportes
-Admin --> UA_ModerarNotas
-Admin --> UA_ModerarCom
+  else (Comentario)
+    :Revisar comentario;
 
-' include
-UA_ModerarNotas .> UA_RegistrarNotas : <<include>>
-UA_ModerarCom   .> UA_RegistrarCom   : <<include>>
+    if ("¿Mostrar?") then (Sí)
+      :Comentario = VISIBLE;
+    else (No)
+      if ("¿Ocultar?") then (Sí)
+        :Comentario = OCULTO;
+      else (No)
+        if ("¿Rechazar/Eliminar?") then (Sí)
+          :Comentario = NO visible / Eliminado;
+        endif
+      endif
+    endif
+  endif
 
-' extend
-UA_CambiarEstado .> UA_ModerarNotas : <<extend>>
-UA_ToggleCom     .> UA_ModerarCom   : <<extend>>
+  :Registrar decisión;
+  :Registrar en historial de moderación;
+  :Volver a pendientes;
 
+else (No)
+  :Sin pendientes / Revisar reportes cerrados;
+endif
+
+:Finalizar sesión;
+stop
 @enduml
