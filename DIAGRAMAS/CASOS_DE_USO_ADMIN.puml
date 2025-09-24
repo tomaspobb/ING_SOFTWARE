@@ -1,64 +1,53 @@
 @startuml
-' ======== ACT ADMIN COMPLETO ========
-skinparam dpi 200
+' ===== Casos de uso ADMIN — etiquetas centradas =====
+skinparam dpi 220
 skinparam shadowing false
-skinparam DefaultFontSize 14
-skinparam ActivityBackgroundColor white
-skinparam ActivityBorderThickness 1.2
-skinparam ArrowThickness 1.2
+skinparam UsecaseBorderThickness 1.2
+skinparam actorStyle awesome
+skinparam PackageBorderThickness 1
+skinparam PackageBackgroundColor white
+skinparam ArrowThickness 1.6
+skinparam linetype ortho
+left to right direction
 
-start
-:Iniciar sesión como Admin;
-:Buscar/Ver apuntes;
-:Acceder al panel de moderación;
-:Ver cola de pendientes (apuntes/comentarios);
+actor Admin
 
-if ("¿Hay pendientes?") then (Sí)
-  :Seleccionar elemento;
+rectangle "Plataforma de Apuntes — Modo Admin" {
 
-  if ("¿Es apunte?") then (Sí)
-    :Revisar apunte;
+  ' -------- Moderación de comentarios --------
+  package "Moderación de comentarios" {
+    usecase "Ocultar/Mostrar"       as UA_ToggleCom
+    usecase "Moderar comentarios"   as UA_ModerarCom
+    usecase "Registrar decisión"    as UA_RegistrarCom
+  }
 
-    if ("¿Aprobar?") then (Sí)
-      :Estado = PUBLICADO;
-    else (No)
-      if ("¿Rechazar?") then (Sí)
-        :Estado = RECHAZADO;
-      else (No)
-        if ("¿Observar?") then (Sí)
-          :Estado = OBSERVADO;
-        else (No)
-          if ("¿Ocultar/Mostrar?") then (Sí)
-            :Estado = OCULTO / PUBLICADO;
-          endif
-        endif
-      endif
-    endif
+  UA_ToggleCom -[#gray,dashed]-> UA_ModerarCom : <<extend>>
+  UA_ModerarCom -[#gray,dashed]-> UA_RegistrarCom : <<include>>
 
-  else (Comentario)
-    :Revisar comentario;
 
-    if ("¿Mostrar?") then (Sí)
-      :Comentario = VISIBLE;
-    else (No)
-      if ("¿Ocultar?") then (Sí)
-        :Comentario = OCULTO;
-      else (No)
-        if ("¿Rechazar/Eliminar?") then (Sí)
-          :Comentario = NO visible / Eliminado;
-        endif
-      endif
-    endif
-  endif
+  ' -------- Moderación de apuntes --------
+  package "Moderación de apuntes" {
+    usecase "Cambiar estado"        as UA_CambiarEstado
+    usecase "Moderar apuntes"       as UA_ModerarNotas
+    usecase "Registrar decisión"    as UA_RegistrarNotas
+  }
 
-  :Registrar decisión;
-  :Registrar en historial de moderación;
-  :Volver a pendientes;
+  UA_CambiarEstado -[#gray,dashed]-> UA_ModerarNotas : <<extend>>
+  UA_ModerarNotas -[#gray,dashed]-> UA_RegistrarNotas : <<include>>
 
-else (No)
-  :Sin pendientes / Revisar reportes cerrados;
-endif
 
-:Finalizar sesión;
-stop
+  ' -------- Gestión general --------
+  package "Gestión general" {
+    usecase "Iniciar/Cerrar sesión\n(Microsoft SSO)" as UA_Login
+    usecase "Buscar/Ver apuntes" as UA_Browse
+    usecase "Revisar reportes"   as UA_Reportes
+  }
+}
+
+' --- Asociaciones del actor ---
+Admin --> UA_ToggleCom
+Admin --> UA_CambiarEstado
+Admin --> UA_Login
+Admin --> UA_Browse
+Admin --> UA_Reportes
 @enduml
