@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // ⭐ Estrella fraccionada en cuartos
 const StarFraction: React.FC<{ fraction: number }> = ({ fraction }) => {
@@ -51,13 +51,30 @@ const Ranking: React.FC = () => {
   const [tempRating, setTempRating] = useState<number | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
 
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState<"nombre" | "rating" | null>(null);
+
   // Filtrar según el rating aplicado
   const filteredResúmenes = selectedRating
     ? resúmenes.filter((r) => r.rating === selectedRating)
-    : resúmenes;
+    : [...resúmenes];
+
+  // Ordenar según sortBy
+  if (sortBy === "nombre") {
+    filteredResúmenes.sort((a, b) => a.titulo.localeCompare(b.titulo));
+  } else if (sortBy === "rating") {
+    filteredResúmenes.sort((a, b) => b.rating - a.rating);
+  }
 
   // rating activo (hover > temp > 0)
   const activeRating = hoverRating ?? tempRating ?? 0;
+
+  // cerrar menú de ordenar si clickeas afuera
+  useEffect(() => {
+    const handler = () => setShowSort(false);
+    if (showSort) document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [showSort]);
 
   return (
     <div className="max-w-2xl mx-auto mt-6 space-y-4">
@@ -68,14 +85,61 @@ const Ranking: React.FC = () => {
           Mira los resúmenes mejor valorados por la comunidad
         </p>
 
-        {/* Botón Filtros */}
-        <div className="flex justify-center mt-3">
-          <button
-            onClick={() => setShowModal(true)}
-            className="px-4 py-1 border rounded-lg text-sm font-medium text-blue-600 border-blue-200 bg-white transition-all duration-300 hover:bg-blue-600 hover:text-white hover:scale-105"
-          >
-            Filtros
-          </button>
+        {/* Botones Filtros y Ordenar */}
+        <div className="flex flex-col items-center gap-2 mt-3">
+          <div className="flex justify-center gap-3 relative">
+            {/* Filtros */}
+            <button
+              onClick={() => setShowModal(true)}
+              className="px-4 py-1 border rounded-lg text-sm font-medium text-blue-600 border-blue-200 bg-white transition-all duration-300 hover:bg-blue-600 hover:text-white hover:scale-105"
+            >
+              Filtros
+            </button>
+
+            {/* Ordenar por */}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowSort(!showSort);
+                }}
+                className="px-4 py-1 border rounded-lg text-sm font-medium text-blue-600 border-blue-200 bg-white transition-all duration-300 hover:bg-blue-600 hover:text-white hover:scale-105"
+              >
+                Ordenar por
+              </button>
+
+              {showSort && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      setSortBy("nombre");
+                      setShowSort(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm rounded-t-lg transition-colors hover:bg-blue-100 hover:text-blue-700"
+                  >
+                    📑 Nombre
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSortBy("rating");
+                      setShowSort(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm rounded-b-lg transition-colors hover:bg-blue-100 hover:text-blue-700"
+                  >
+                    ⭐ Mejor rankeado
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Texto del orden actual */}
+          {sortBy && (
+            <p className="text-sm text-gray-600">
+              Ordenar por:{" "}
+              {sortBy === "nombre" ? "📑 Nombre" : "⭐ Mejor rankeado"}
+            </p>
+          )}
         </div>
       </div>
 
@@ -83,11 +147,11 @@ const Ranking: React.FC = () => {
       {showModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
-          onClick={() => setShowModal(false)} // cerrar al hacer click fuera
+          onClick={() => setShowModal(false)}
         >
           <div
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative"
-            onClick={(e) => e.stopPropagation()} // evitar cerrar al clickear dentro
+            onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
               Filtros
