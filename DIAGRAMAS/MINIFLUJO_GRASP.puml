@@ -1,0 +1,14 @@
+Estudiante -> UI : click "Valorar(⭐️)"
+UI -> ControladorContenido : valorar(apunteId, puntaje, usuario)
+ControladorContenido -> RepoValoraciones : existeDe(usuario, apunteId)?
+alt ya valoró
+  ControladorContenido -> UI : error "1 voto por usuario"
+else no ha valorado
+  ControladorContenido -> RepoApuntes : findById(apunteId)
+  RepoApuntes --> ControladorContenido : Apunte
+  ControladorContenido -> Apunte : agregarValoracion(usuario, puntaje)
+  Apunte --> ControladorContenido : promedioActualizado
+  ControladorContenido -> RepoValoraciones : save(nuevaValoracion)
+  ControladorContenido -> RepoApuntes : save(apunteActualizado)
+  ControladorContenido -> UI : ok (nuevo promedio)
+end
