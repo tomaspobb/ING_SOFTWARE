@@ -1,0 +1,94 @@
+@startuml
+' ==== Notivium — GRASP Controlador + Experto (ultra-compat) ====
+skinparam dpi 200
+skinparam shadowing false
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+left to right direction
+
+package "Interfaz Web" {
+  class UI {
+    +accionBuscar()
+    +accionVer()
+    +accionValorar()
+    +accionComentar()
+    +accionReportar()
+    +accionModerar()
+  }
+}
+
+package "Aplicacion" {
+  class ControladorContenido {
+    +buscar()
+    +verFicha()
+    +valorar()
+    +comentar()
+    +reportar()
+    +descargar()
+  }
+
+  class ControladorModeracion {
+    +cambiarEstado()
+    +moderarComentario()
+  }
+}
+
+package "Dominio" {
+  class Apunte {
+    +id: String
+    +titulo: String
+    +calcularPromedio()
+    +cambiarEstado()
+  }
+
+  class Comentario {
+    +id: String
+    +texto: String
+    +mostrar()
+    +ocultar()
+  }
+
+  class Valoracion {
+    +puntaje: int
+  }
+
+  class DecisionModeracion {
+    +decision: String
+    +motivo: String
+  }
+}
+
+package "Persistencia" {
+  class RepoApuntes { +findById(); +save() }
+  class RepoComentarios { +save() }
+  class RepoValoraciones { +save() }
+  class RepoUsuarios { +findByEmail() }
+}
+
+' --- Flujos principales ---
+UI --> ControladorContenido
+UI --> ControladorModeracion
+
+ControladorContenido --> RepoApuntes
+ControladorContenido --> RepoComentarios
+ControladorContenido --> RepoValoraciones
+ControladorContenido --> RepoUsuarios
+
+ControladorModeracion --> RepoApuntes
+ControladorModeracion --> RepoComentarios
+ControladorModeracion --> RepoUsuarios
+
+' Dependencias hacia entidades (Experto)
+ControladorContenido ..> Apunte
+ControladorContenido ..> Comentario
+ControladorContenido ..> Valoracion
+ControladorModeracion ..> Apunte
+ControladorModeracion ..> Comentario
+ControladorModeracion ..> DecisionModeracion
+
+' Repos a entidades (agregacion para indicar almacenamiento)
+RepoApuntes o-- Apunte
+RepoComentarios o-- Comentario
+RepoValoraciones o-- Valoracion
+
+@enduml
