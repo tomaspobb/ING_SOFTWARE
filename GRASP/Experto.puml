@@ -1,0 +1,47 @@
+@startuml
+skinparam dpi 160
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+package "Aplicación" {
+  class ControladorContenido <<controller>> {
+    +valorar(id,puntaje,usuario)
+  }
+  class ControladorModeracion <<controller>> {
+    +cambiarEstado(apunteId,decision,admin)
+  }
+}
+
+package "Dominio" {
+  class Apunte <<entity>> {
+    +id: UUID
+    +titulo: String
+    +calcularPromedio(): float
+    +cambiarEstado(decision)
+  }
+  class Valoracion <<entity>> {
+    +puntaje: int
+    +esDe(usuario, apunte): boolean
+  }
+  class DecisionModeracion <<entity>> {
+    +decision: String
+    +motivo: String
+  }
+}
+
+'--- el Experto recibe la responsabilidad porque tiene los datos ---
+ControladorContenido --> Apunte : solicitar\ncalcularPromedio()
+Apunte --> Valoracion : usa valoraciones\nasociadas
+
+ControladorModeracion --> Apunte : solicitar\ncambiarEstado(decision)
+Apunte --> DecisionModeracion : usa decisión\nrecibida
+
+note right of Apunte
+  Patrón Experto:
+  Apunte conoce sus valoraciones
+  y su estado, por eso implementa
+  calcularPromedio() y cambiarEstado().
+end note
+@enduml

@@ -1,0 +1,57 @@
+@startuml
+skinparam dpi 160
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+package "Interfaz Web" {
+  class UI <<boundary>>
+}
+
+package "Aplicación" {
+  class ControladorContenido <<controller>> {
+    +buscar(filtros)
+    +verFicha(id)
+    +valorar(id,puntaje,usuario)
+    +comentar(id,texto,usuario)
+    +reportar(id,motivo,usuario)
+    +descargar(id)
+  }
+  class ControladorModeracion <<controller>> {
+    +cambiarEstado(apunteId,decision,motivo,admin)
+    +moderarComentario(id,decision,admin)
+  }
+}
+
+package "Dominio" {
+  class Apunte <<entity>> {
+    +calcularPromedio(): float
+    +cambiarEstado(decision)
+  }
+  class Comentario <<entity>>
+  class Valoracion <<entity>>
+  class DecisionModeracion <<entity>>
+}
+
+UI --> ControladorContenido : eventos\nde estudiante
+UI --> ControladorModeracion : eventos\nde admin
+
+ControladorContenido --> Apunte : coordina
+ControladorContenido --> Comentario : coordina
+ControladorContenido --> Valoracion : coordina
+
+ControladorModeracion --> Apunte : coordina
+ControladorModeracion --> Comentario : coordina
+ControladorModeracion --> DecisionModeracion : registra
+
+note bottom of ControladorContenido
+  Punto único de entrada para
+  “buscar/valorar/comentar/reportar”.
+end note
+
+note bottom of ControladorModeracion
+  Punto único de entrada para
+  “aprobar/rechazar/observar/ocultar”.
+end note
+@enduml
