@@ -13,7 +13,7 @@
     "bootstrap": "^5.3.8",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.544.0",
-    "mongoose": "^8.18.1",
+    "mongoose": "^8.19.1",
     "next": "15.5.3",
     "next-auth": "^4.24.11",
     "react": "19.1.0",
