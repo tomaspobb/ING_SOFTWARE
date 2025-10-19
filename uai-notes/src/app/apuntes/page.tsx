@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { SUBJECTS } from "@/lib/subjects";
+import UploadCTA from "@/components/UploadCTA";
 
 type Note = {
   _id: string;
@@ -10,126 +12,59 @@ type Note = {
   topic?: string;
   keywords?: string[];
   authorName?: string;
+  pdfUrl?: string;
   downloads: number;
   views: number;
   ratingAvg: number;
   ratingCount: number;
-  createdAt?: string;
+  createdAt: string;
 };
 
-// mismos ramos que en el API (azules — sin Economía ni Optativos)
-const SUBJECTS = [
-  "Minería de Datos",
-  "Inteligencia Artificial",
-  "Sistemas de Información",
-  "Seguridad en TI",
-  "Gestión de Proyectos Informáticos",
-  "Lenguajes y Paradigmas de Programación",
-  "Diseño de Software",
-  "Programación Profesional",
-  "Ingeniería de Software",
-  "Estrategia TI",
-  "Estructuras de Datos y Algoritmos",
-  "Redes de Computadores",
-  "Arquitectura de Sistemas",
-  "Arquitectura Cloud",
-  "Bases de Datos",
-  "Sistemas Operativos",
-] as const;
-
-const SORTS = [
-  { key: "recent", label: "Recientes" },
-  { key: "downloads", label: "Más descargados" },
-  { key: "rating", label: "Mejor valorados" },
-  { key: "views", label: "Más vistos" },
-] as const;
-
 export default function ApuntesRepositoryPage() {
-  // filtros UI
-  const [subject, setSubject] = useState<string>("");
-  const [topic, setTopic] = useState<string>("");
-  const [q, setQ] = useState<string>("");
-  const [sort, setSort] = useState<string>("recent");
-
-  // datos
   const [items, setItems] = useState<Note[]>([]);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [err, setErr] = useState<string | null>(null);
 
-  // paginación simple cliente
-  const [page, setPage] = useState(1);
-  const pageSize = 9;
+  // filtros
+  const [subject, setSubject] = useState<string>("");
+  const [topic, setTopic] = useState("");
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState("recent");
+  const [year, setYear] = useState<string>("");
+  const [semester, setSemester] = useState<string>("");
 
-  const visible = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return items.slice(start, start + pageSize);
-  }, [items, page]);
-
-  const pages = Math.max(1, Math.ceil(items.length / pageSize));
-
-  const fetchNotes = () => {
-    setLoading(true);
-    setErrorMsg("");
-
+  useEffect(() => {
     const params = new URLSearchParams();
     if (subject) params.set("subject", subject);
     if (topic) params.set("topic", topic);
     if (q) params.set("q", q);
-    if (sort) params.set("sort", sort);
-    // trae hasta 60 para paginar en cliente
-    params.set("limit", "60");
+    if (year) params.set("year", year);
+    if (semester) params.set("semester", semester);
+    params.set("sort", sort);
+
+    setLoading(true);
+    setErr(null);
 
     fetch(`/api/notes?${params.toString()}`)
       .then(async (r) => {
-        let data: any = null;
-        try {
-          data = await r.json();
-        } catch {
-          // puede venir vacío si el server explotó
-        }
-        if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
-        return data;
+        const json = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(json?.error || "FETCH_ERROR");
+        return json;
       })
-      .then((d) => {
-        setItems(d?.data ?? []);
-        setPage(1);
-      })
-      .catch((err) => {
-        console.error("Notes fetch error:", err?.message || err);
-        setItems([]);
-        setErrorMsg(
-          "No pudimos cargar los apuntes ahora mismo. Intenta de nuevo en unos minutos."
-        );
-      })
+      .then((d) => setItems(d?.data ?? []))
+      .catch((e) => setErr(e.message || "FETCH_ERROR"))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const clearFilters = () => {
-    setSubject("");
-    setTopic("");
-    setQ("");
-    setSort("recent");
-    setPage(1);
-    // opcional: vuelve a buscar sin filtros
-    fetchNotes();
-  };
+  }, [subject, topic, q, year, semester, sort]);
 
   return (
-    <div className="container-nv py-4">
-      {/* ——— Cabecera / Filtros ——— */}
+    <div className="container-nv my-4">
+      {/* Filtros */}
       <div className="section-card p-4 mb-4">
-        <h2 className="nv-title mb-2">Apuntes</h2>
-        <p className="nv-subtitle mb-3">
-          Busca, filtra y explora los apuntes validados por la comunidad UAI.
-        </p>
+        <h1 className="nv-title fs-2 mb-2">Apuntes</h1>
+        <p className="nv-subtitle">Busca, filtra y explora los apuntes de Ing. Civil Informática.</p>
 
-        <div className="row g-3">
-          <div className="col-12 col-md-4">
+        <div className="row g-3 mt-2">
+          <div className="col-md-4">
             <label className="form-label">Asignatura</label>
             <select
               className="form-select"
@@ -145,163 +80,139 @@ export default function ApuntesRepositoryPage() {
             </select>
           </div>
 
-          <div className="col-12 col-md-4">
+          <div className="col-md-4">
             <label className="form-label">Tema</label>
             <input
               className="form-control"
-              placeholder="Ej: Integrales"
+              placeholder="Grafos, Sistemas…"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
             />
           </div>
 
-          <div className="col-12 col-md-4">
+          <div className="col-md-4">
             <label className="form-label">Palabras clave</label>
             <input
               className="form-control"
-              placeholder="resumen, guía, control…"
+              placeholder="resumen, guía…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
 
-          <div className="col-12 d-flex gap-2 align-items-end">
-            <button className="btn btn-primary btn-pill" onClick={fetchNotes}>
-              <i className="bi bi-search me-1" />
-              Buscar
-            </button>
-            <button className="btn btn-light btn-pill" onClick={clearFilters}>
-              Limpiar
-            </button>
+          <div className="col-md-2">
+            <label className="form-label">Año</label>
+            <input
+              type="number"
+              min={2018}
+              max={2099}
+              className="form-control"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              placeholder="2025"
+            />
+          </div>
 
-            <div className="ms-auto d-flex align-items-center gap-2">
-              <span className="text-muted small">Ordenar por</span>
-              <select
-                className="form-select form-select-sm"
-                style={{ width: 190 }}
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-              >
-                {SORTS.map((s) => (
-                  <option key={s.key} value={s.key}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="col-md-2">
+            <label className="form-label">Semestre</label>
+            <select
+              className="form-select"
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+            >
+              <option value="">—</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+
+          <div className="col-md-3">
+            <label className="form-label">Ordenar</label>
+            <select
+              className="form-select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <option value="recent">Recientes</option>
+              <option value="downloads">Descargas</option>
+              <option value="rating">Mejor valorados</option>
+              <option value="views">Más vistos</option>
+            </select>
           </div>
         </div>
-
-        {errorMsg && (
-          <div className="alert alert-warning mt-3 mb-0">{errorMsg}</div>
-        )}
       </div>
 
-      {/* ——— Grid de tarjetas ——— */}
+      {/* Layout en 2 columnas con lógica para no duplicar CTA */}
       {loading ? (
-        <p className="text-muted">Cargando…</p>
-      ) : visible.length === 0 ? (
-        <div className="nv-card p-4 text-center">
-          <div className="mb-2">
-            <i className="bi bi-journal-text" />
+        <div className="nv-card p-4 text-center">Cargando…</div>
+      ) : err ? (
+        <div className="nv-card p-4">
+          <div className="fw-semibold mb-1">No pudimos cargar los apuntes.</div>
+          <div className="text-secondary small">
+            {err === "DB_UNAVAILABLE"
+              ? "Problema de conexión con la base de datos. Intenta de nuevo más tarde."
+              : "Intenta refrescar o probar más tarde."}
           </div>
-          <p className="mb-0">No hay apuntes que coincidan con tu búsqueda.</p>
         </div>
+      ) : items.length === 0 ? (
+// —— CASO SIN RESULTADOS: BLOQUE FULL WIDTH CON CTA (sin borde superior) ——
+<div
+  className="p-4 rounded-4 shadow-sm fade-in"
+  style={{
+    background: "linear-gradient(to bottom right, #ffffff, #f9fafc)",
+    border: "1px solid #e5e7eb",
+  }}
+>
+  <div className="fw-semibold fs-6 mb-2 text-gray-800">
+    No hay resultados con los filtros actuales.
+  </div>
+
+  <p className="text-secondary small mb-4">
+    Prueba cambiando la asignatura o las palabras clave.  
+    También puedes compartir tu propio material para que otros lo encuentren y ayudes a la comunidad UAI:
+  </p>
+
+  <div
+    className="p-4 rounded-4 shadow-sm"
+    style={{
+      background: "linear-gradient(to right, #f4f7ff, #f0f5ff)",
+      border: "none",
+      boxShadow: "0 4px 16px rgba(59,130,246,0.08)",
+    }}
+  >
+    <UploadCTA />
+  </div>
+</div>
+
       ) : (
-        <>
-          <div className="row g-3">
-            {visible.map((n) => (
-              <div key={n._id} className="col-12 col-md-6 col-lg-4">
-                <div className="nv-card h-100">
-                  <div className="card-body d-flex flex-column">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <span className="badge-soft px-2 py-1 small nv-ellipsis-1">
-                        {n.subject}
-                      </span>
-                      <span className="text-muted small">
-                        <i className="bi bi-download me-1" />
-                        {n.downloads ?? 0}
-                      </span>
-                    </div>
-
-                    <h5 className="card-title mt-2 nv-ellipsis-1">{n.title}</h5>
-                    <p className="card-text nv-clamp-2">{n.description}</p>
-
-                    <div className="text-muted small mb-2">
-                      {n.topic && (
-                        <>
-                          <i className="bi bi-tag me-1" />
-                          {n.topic}
-                        </>
-                      )}
-                    </div>
-
-                    <div className="mt-auto d-flex align-items-center justify-content-between pt-1">
-                      <div className="text-muted small nv-ellipsis-1">
-                        <i className="bi bi-person-circle me-1" />
-                        {n.authorName || "Autor"}
-                      </div>
-                      <div className="d-flex gap-2">
-                        <a
-                          className="btn btn-sm btn-outline-primary btn-pill"
-                          href={`/apuntes/${n._id}`}
-                          role="button"
-                        >
-                          <i className="bi bi-eye me-1" />
-                          Ver
-                        </a>
-                        <button className="btn btn-sm btn-soft btn-pill">
-                          <i className="bi bi-bookmark me-1" />
-                          Guardar
-                        </button>
-                      </div>
-                    </div>
+        // —— CASO CON RESULTADOS: grilla + CTA lateral (uno solo) ——
+        <div className="row g-4">
+          <div className="col-lg-8">
+            <div className="row g-3">
+              {items.map((n) => (
+                <div className="col-md-6" key={n._id}>
+                  <div className="nv-card p-3 h-100">
+                    <div className="small text-secondary mb-1">{n.subject}</div>
+                    <h3 className="h6 mb-1">{n.title}</h3>
+                    {n.description && (
+                      <div className="small text-secondary nv-ellipsis-1">{n.description}</div>
+                    )}
+                    <a className="btn btn-soft btn-sm mt-3" href={`/apuntes/${n._id}`}>
+                      Ver
+                    </a>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* ——— Paginación cliente ——— */}
-          {pages > 1 && (
-            <div className="d-flex justify-content-center mt-3">
-              <nav>
-                <ul className="pagination pagination-sm mb-0">
-                  <li className={`page-item ${page === 1 ? "disabled" : ""}`}>
-                    <button
-                      className="page-link"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    >
-                      «
-                    </button>
-                  </li>
-                  {Array.from({ length: pages }).map((_, i) => (
-                    <li
-                      key={i}
-                      className={`page-item ${page === i + 1 ? "active" : ""}`}
-                    >
-                      <button className="page-link" onClick={() => setPage(i + 1)}>
-                        {i + 1}
-                      </button>
-                    </li>
-                  ))}
-                  <li
-                    className={`page-item ${page === pages ? "disabled" : ""}`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        setPage((p) => Math.min(pages, p + 1))
-                      }
-                    >
-                      »
-                    </button>
-                  </li>
-                </ul>
-              </nav>
+          {/* CTA lateral solo cuando hay resultados */}
+          <div className="col-lg-4">
+            <div style={{ position: "sticky", top: 96 }}>
+              <UploadCTA />
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );
