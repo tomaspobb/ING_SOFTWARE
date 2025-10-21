@@ -1,8 +1,36 @@
-// src/app/apuntes/[id]/page.tsx
-import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
+import { SUBJECTS } from "@/lib/subjects";
 
-// ⚠️ En Next 15, params es un Promise: hay que await
+// Tracker de vistas en el cliente
+function ViewTracker({ id }: { id: string }) {
+  // cliente
+  if (typeof window !== "undefined") {
+    fetch(`/api/notes/${id}/view`, { method: "POST" }).catch(() => {});
+  }
+  return null;
+}
+
+type NoteDTO = {
+  _id: string;
+  title: string;
+  description?: string;
+  subject: string;
+  topic?: string;
+  keywords?: string[];
+  year?: number;
+  semester?: number;
+  authorName?: string;
+  authorEmail?: string;
+  pdfUrl?: string;
+  downloads: number;
+  views: number;
+  ratingAvg: number;
+  ratingCount: number;
+  moderated: boolean;
+  createdAt: string;
+};
+
 export default async function NoteDetailPage({
   params,
 }: {
@@ -10,86 +38,89 @@ export default async function NoteDetailPage({
 }) {
   const { id } = await params;
 
-  // Pedimos por API del proyecto; sin cache para ver cambios altiro
-  const res = await fetch(`${process.env.NEXTAUTH_URL ?? ""}/api/notes/${id}`, {
+  // server fetch (sin cache para ver contadores actualizados al recargar)
+  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/notes/${id}`, {
     cache: "no-store",
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    return (
-      <main className="container-nv py-4">
-        <div className="alert alert-warning">
-          {err?.error === "INVALID_ID"
-            ? "El identificador del apunte no es válido."
-            : "No pudimos cargar este apunte."}
-        </div>
-        <Link href="/apuntes" className="btn btn-soft">Volver</Link>
-      </main>
-    );
-  }
+  if (!res.ok) return notFound();
+  const json = (await res.json()) as { ok: boolean; data?: NoteDTO };
+  if (!json.ok || !json.data) return notFound();
 
-  const { data: note } = await res.json();
+  const n = json.data;
 
   return (
-    <main className="container-nv py-4">
+    <div className="container-nv my-4">
+      {/* sumar vista al montar */}
+      <ViewTracker id={n._id} />
+
       <div className="section-card p-4 mb-4">
-        <div className="d-flex justify-content-between align-items-start gap-3">
+        <div className="d-flex align-items-start justify-content-between gap-3">
           <div>
-            <h1 className="nv-title mb-1">{note.title}</h1>
-            <div className="text-muted">
-              {note.subject} ·{" "}
-              {note.year ? `${note.year} · ` : ""}
-              {note.semester ? `Sem ${note.semester}` : ""}
+            <h1 className="display-6 mb-1">{n.title}</h1>
+            <div className="text-secondary">
+              {n.subject}
+              {n.year ? ` · ${n.year}` : ""}{n.semester ? ` · S${n.semester}` : ""}
+              {n.authorName ? ` · ${n.authorName}` : ""}
             </div>
           </div>
 
           <div className="d-flex gap-2">
-            {/* Ver/Descargar si hay archivo */}
-            {note.pdfUrl ? (
-              <>
-                <a
-                  className="btn btn-primary"
-                  href={`/api/notes/${note._id}/view`}
-                  target="_blank"
-                >
-                  Ver
-                </a>
-                <a
-                  className="btn btn-outline-primary"
-                  href={`/api/notes/${note._id}/download`}
-                >
-                  Descargar
-                </a>
-              </>
-            ) : null}
+            <a
+              href={n.pdfUrl || "#"}
+              target="_blank"
+              className="btn btn-primary btn-pill"
+              rel="noreferrer"
+            >
+              Ver
+            </a>
+            <Link
+              href={`/api/notes/${n._id}/download`}
+              className="btn btn-outline-primary btn-pill"
+            >
+              Descargar
+            </Link>
           </div>
         </div>
 
-        {note.description ? (
-          <p className="mt-3 mb-0">{note.description}</p>
-        ) : null}
+        {n.description && <p className="mt-3 mb-2">{n.description}</p>}
 
-        {/* Chips de metadatos */}
-        <div className="mt-3 d-flex flex-wrap gap-2">
-          {note.topic ? <span className="nv-chip">Tema: {note.topic}</span> : null}
-          <span className="nv-chip">Vistas: {note.views}</span>
-          <span className="nv-chip">Descargas: {note.downloads}</span>
-          <span className="nv-chip">
-            Rating: {note.ratingAvg?.toFixed(1) ?? 0} ({note.ratingCount})
+        <div className="d-flex flex-wrap gap-2 mt-2">
+          {n.topic && (
+            <span className="badge-soft">Tema: {n.topic}</span>
+          )}
+          <span className="badge-soft">Vistas: {n.views ?? 0}</span>
+          <span className="badge-soft">Descargas: {n.downloads ?? 0}</span>
+          <span className="badge-soft">
+            Rating: {Number(n.ratingAvg || 0).toFixed(1)} ({n.ratingCount || 0})
           </span>
+          {n.keywords?.length
+            ? n.keywords.map((k) => (
+                <span key={k} className="badge-soft">{k}</span>
+              ))
+            : null}
         </div>
       </div>
 
-      {/* Comentarios pronto… */}
-      <div className="section-card p-4">
-        <h5 className="mb-3">Comentarios</h5>
-        <p className="text-muted m-0">Pronto podrás comentar aquí 👀</p>
+      {/* Viewer simple si es PDF */}
+      {n.pdfUrl?.toLowerCase().endsWith(".pdf") ? (
+        <div className="section-card p-2">
+          <iframe
+            src={n.pdfUrl}
+            title={n.title}
+            style={{ width: "100%", height: "75vh", border: 0, borderRadius: 14 }}
+          />
+        </div>
+      ) : (
+        <div className="alert alert-info">
+          Este archivo no es PDF o el visor no puede incrustarlo. Usa “Ver” o “Descargar”.
+        </div>
+      )}
+
+      <div className="section-card p-4 mt-4">
+        <h3 className="h5 mb-2">Comentarios</h3>
+        <p className="text-secondary">Pronto podrás comentar aquí 👀</p>
       </div>
-    </main>
+    </div>
   );
 }
-
-export const metadata: Metadata = {
-  title: "Detalle de apunte – Notivium",
-};

@@ -1,12 +1,14 @@
 // src/app/api/notes/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import mongoose, { Schema } from "mongoose";
-import { SUBJECTS } from "@/lib/subjects";
+import { getServerSession } from "next-auth";
+import authOptions from "@/lib/auth";                 // <-- ajusta si tu archivo está en otra ruta
+import { SUBJECTS } from "@/lib/subjects";            // 16 asignaturas (azules)
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* ---------------- DB connect con cache global ---------------- */
+/* ───────────────────── DB connect (cache global) ───────────────────── */
 const MONGODB_URI = process.env.MONGODB_URI;
 
 async function dbConnect() {
@@ -29,15 +31,20 @@ async function dbConnect() {
   return g._mongo.conn;
 }
 
-/* ---------------- Tipos + Schema ---------------- */
+/* ─────────────────────────── Tipos + Schema ─────────────────────────── */
 type TNote = {
   title: string;
   description?: string;
-  subject: string;
+  subject: string;      // enum SUBJECTS
   topic?: string;
   keywords?: string[];
+
+  year?: number;        // plano (no meta.year)
+  semester?: number;    // 1 | 2
+
   authorName?: string;
   authorEmail?: string;
+
   pdfUrl?: string;
 
   downloads: number;
@@ -50,8 +57,7 @@ type TNote = {
   updatedAt: Date;
 };
 
-// ⚠️ NO uses `models` importado. En server usa `mongoose.models`,
-// que existe tras el connect. Así evitas `undefined` en builds.
+// Usa mongoose.models para evitar undefined en hot reload/build
 const Note =
   (mongoose.models?.Note as mongoose.Model<TNote>) ??
   mongoose.model<TNote>(
@@ -60,35 +66,46 @@ const Note =
       {
         title: { type: String, required: true, trim: true },
         description: { type: String, default: "" },
+
         subject: { type: String, required: true, enum: SUBJECTS },
         topic: { type: String, default: "" },
         keywords: { type: [String], default: [] },
-        authorName: String,
-        authorEmail: String,
-        pdfUrl: String,
+
+        year: { type: Number },          // ej: 2025
+        semester: { type: Number },      // 1 o 2
+
+        authorName: { type: String, default: "" },
+        authorEmail: { type: String, default: "" },
+
+        pdfUrl: { type: String, default: "" },
 
         downloads: { type: Number, default: 0 },
         views: { type: Number, default: 0 },
         ratingAvg: { type: Number, default: 0 },
         ratingCount: { type: Number, default: 0 },
-        moderated: { type: Boolean, default: true },
+
+        // por defecto, todo entra a cola de moderación
+        moderated: { type: Boolean, default: false },
       },
       { timestamps: true }
     )
   );
 
-/* ---------------- Helpers de query ---------------- */
+/* ───────────────────────── Helpers de filtro ───────────────────────── */
 function buildSearchQuery(params: URLSearchParams) {
   const q: any = {};
+
+  // por defecto mostramos sólo moderados (a menos que ?moderated=false)
   const moderated = (params.get("moderated") ?? "true").toLowerCase() !== "false";
   if (moderated) q.moderated = true;
 
   const subject = params.get("subject");
-  if (subject && SUBJECTS.includes(subject as any)) q.subject = subject;
+  if (subject && SUBJECTS.includes(subject)) q.subject = subject;
 
   const topic = params.get("topic");
   if (topic) q.topic = { $regex: topic, $options: "i" };
 
+  // texto libre
   const k = params.get("q");
   if (k) {
     const regex = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
@@ -96,10 +113,10 @@ function buildSearchQuery(params: URLSearchParams) {
   }
 
   const year = params.get("year");
-  if (year) q["meta.year"] = Number(year);
+  if (year) q.year = Number(year);
 
   const semester = params.get("semester");
-  if (semester) q["meta.semester"] = Number(semester);
+  if (semester) q.semester = Number(semester);
 
   return q;
 }
@@ -111,20 +128,21 @@ function buildSort(params: URLSearchParams) {
     case "rating":
       return { ratingAvg: -1, ratingCount: -1 };
     case "views":
-      return { views: -1 };
+      return { views: -1, createdAt: -1 };
     default:
       return { createdAt: -1 };
   }
 }
 
-/* ---------------- GET /api/notes ---------------- */
+/* ────────────────────────── GET /api/notes ─────────────────────────── */
 export async function GET(req: NextRequest) {
-  // Nunca se ejecuta en el cliente; si importas esto en un componente,
-  // forzarás el bundle en el browser (y explotará). Evítalo.
   try {
     await dbConnect();
   } catch {
-    return NextResponse.json({ ok: false, error: "DB_UNAVAILABLE", data: [] }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, error: "DB_UNAVAILABLE", data: [] },
+      { status: 503 }
+    );
   }
 
   const { searchParams } = new URL(req.url);
@@ -143,7 +161,11 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/* ---------------- POST /api/notes ---------------- */
+/* ────────────────────────── POST /api/notes ──────────────────────────
+ * Crea una nota: { title, description, subject, topic, keywords[], year, semester, pdfUrl }
+ * authorName/authorEmail se toman de la sesión si existen.
+ * moderated=false (cola de revisión).
+ * -------------------------------------------------------------------- */
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
@@ -152,31 +174,47 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const session = await getServerSession(authOptions);
     const body = await req.json();
-    const { title, subject } = body ?? {};
-    if (!title || !subject)
+
+    const title = String(body?.title || "").trim();
+    const subject = String(body?.subject || "");
+    const pdfUrl = String(body?.pdfUrl || "");
+
+    if (!title || !subject || !pdfUrl) {
       return NextResponse.json(
-        { ok: false, error: "TITLE_AND_SUBJECT_REQUIRED" },
+        { ok: false, error: "TITLE_SUBJECT_PDF_REQUIRED" },
         { status: 400 }
       );
+    }
 
-    if (!SUBJECTS.includes(subject))
-      return NextResponse.json({ ok: false, error: "SUBJECT_NOT_ALLOWED" }, { status: 400 });
+    if (!SUBJECTS.includes(subject)) {
+      return NextResponse.json(
+        { ok: false, error: "SUBJECT_NOT_ALLOWED" },
+        { status: 400 }
+      );
+    }
 
     const doc = await Note.create({
-      title: String(title).trim(),
+      title,
       description: String(body.description || ""),
       subject,
       topic: String(body.topic || ""),
-      keywords: Array.isArray(body.keywords) ? body.keywords.map(String) : [],
-      authorName: body.authorName || "",
-      authorEmail: body.authorEmail || "",
-      pdfUrl: body.pdfUrl || "",
-      // Si luego agregas más metadatos (year, semester, etc.) puedes anidarlos en "meta"
-      meta: {
-        year: Number(body.meta?.year) || undefined,
-        semester: Number(body.meta?.semester) || undefined,
-      },
+      keywords: Array.isArray(body.keywords)
+        ? body.keywords.map((s: any) => String(s))
+        : String(body.keywords || "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+
+      year: body.year ? Number(body.year) : undefined,
+      semester: body.semester ? Number(body.semester) : undefined,
+
+      authorName: session?.user?.name || String(body.authorName || ""),
+      authorEmail: session?.user?.email || String(body.authorEmail || ""),
+
+      pdfUrl,
+      // moderated queda en false por default (schema)
     });
 
     return NextResponse.json({ ok: true, data: doc }, { status: 201 });

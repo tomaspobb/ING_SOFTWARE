@@ -1,122 +1,123 @@
-// src/app/apuntes/upload/page.tsx
 "use client";
 
 import { useState } from "react";
-import { SUBJECTS } from "@/lib/subjects";
-
-
-type UploadState = "idle" | "uploading" | "saving" | "done" | "error";
+import { SUBJECTS } from "@/lib/subjects"; // tu lista 16 asignaturas
 
 export default function UploadPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  // metadatos
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
+  const [keywords, setKeywords] = useState<string>("");
   const [year, setYear] = useState<number | "">("");
-  const [semester, setSemester] = useState<number | "">("");
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [kwInput, setKwInput] = useState("");
-  const [description, setDescription] = useState("");
+  const [semester, setSemester] = useState<1 | 2 | "">("");
 
-  const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<UploadState>("idle");
-  const [msg, setMsg] = useState("");
-
-  const addKw = () => {
-    const v = kwInput.trim();
-    if (v && !keywords.includes(v)) setKeywords((k) => [...k, v]);
-    setKwInput("");
-  };
-  const removeKw = (k: string) =>
-    setKeywords((arr) => arr.filter((x) => x !== k));
-
-  async function onSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMsg("");
+    setMsg(null);
 
+    if (!file) {
+      setMsg("Selecciona un archivo PDF o imagen.");
+      return;
+    }
     if (!title || !subject) {
       setMsg("Título y asignatura son obligatorios.");
       return;
     }
-    if (!file) {
-      setMsg("Debes adjuntar un PDF.");
-      return;
-    }
 
+    setSending(true);
     try {
-      setStatus("uploading");
-      // 1) Subir al Blob via API del proyecto
-      const form = new FormData();
-      form.append("file", file);
-      const up = await fetch("/api/upload", { method: "POST", body: form });
-      const upJson = await up.json();
-      if (!up.ok || !upJson?.url) throw new Error(upJson?.error || "UPLOAD_FAIL");
+      // 1) Subir a Blob
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("filename", file.name);
 
-      setStatus("saving");
-      // 2) Crear documento en Mongo
-      const res = await fetch("/api/notes", {
+      const up = await fetch("/api/upload", { method: "POST", body: fd });
+      const upJson = await up.json();
+      if (!up.ok || !upJson?.ok) {
+        throw new Error(upJson?.error || "Fallo al subir archivo");
+      }
+
+      // 2) Crear nota en Mongo
+      const create = await fetch("/api/notes", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
+          description,
           subject,
           topic,
-          description,
-          keywords,
-          year: year || undefined,
-          semester: semester || undefined,
-          pdfUrl: upJson.url, // <- guardamos la URL del Blob
+          keywords: keywords
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          year: year ? Number(year) : undefined,
+          semester: semester ? Number(semester) : undefined,
+          pdfUrl: upJson.url,
         }),
       });
-      const js = await res.json();
-      if (!res.ok) throw new Error(js?.error || "CREATE_FAIL");
+      const cJson = await create.json();
+      if (!create.ok || !cJson?.ok) {
+        throw new Error(cJson?.error || "Error creando nota");
+      }
 
-      setStatus("done");
-      setMsg("¡Apunte subido!");
+      setMsg("¡Apunte enviado a moderación! Gracias por contribuir 🙌");
+      // limpia formulario
+      setFile(null);
+      setTitle("");
+      setDescription("");
+      setSubject("");
+      setTopic("");
+      setKeywords("");
+      setYear("");
+      setSemester("");
     } catch (err: any) {
-      setStatus("error");
-      setMsg(err?.message || "Error subiendo apunte.");
+      setMsg(err?.message || "Error al subir.");
+    } finally {
+      setSending(false);
     }
   }
 
   return (
-    <main className="container-nv py-4">
+    <div className="container-nv my-4">
       <div className="section-card p-4">
-        <h1 className="nv-title mb-3">Subir apunte</h1>
+        <h1 className="nv-title mb-1">Subir apunte</h1>
+        <p className="nv-subtitle mb-4">
+          Comparte tu PDF con título, asignatura, semestre y etiquetas para que la comunidad lo encuentre.
+        </p>
 
         {msg && (
-          <div
-            className={`alert ${
-              status === "done"
-                ? "alert-success"
-                : status === "error"
-                ? "alert-danger"
-                : "alert-info"
-            }`}
-          >
+          <div className="alert alert-info" role="alert">
             {msg}
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="row g-3">
+        <form onSubmit={handleSubmit} className="row g-3">
           <div className="col-md-6">
-            <label className="form-label">Título *</label>
+            <label className="form-label fw-semibold">Título *</label>
             <input
               className="form-control"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ej: Resumen Control 1 — Estructuras de Datos"
               required
             />
           </div>
 
           <div className="col-md-6">
-            <label className="form-label">Asignatura *</label>
+            <label className="form-label fw-semibold">Asignatura *</label>
             <select
               className="form-select"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               required
             >
-              <option value="">Selecciona…</option>
+              <option value="">— Selecciona —</option>
               {SUBJECTS.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -126,37 +127,43 @@ export default function UploadPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label">Tema</label>
+            <label className="form-label fw-semibold">Tema</label>
             <input
               className="form-control"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="Integrales, Grafos, …"
+              placeholder="Ej: Grafos, Integrales, Reinforcement…"
             />
           </div>
 
-          <div className="col-md-2">
-            <label className="form-label">Año</label>
+          <div className="col-md-6">
+            <label className="form-label fw-semibold">Palabras clave</label>
             <input
               className="form-control"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              placeholder="separadas por coma: resumen, guía, control…"
+            />
+          </div>
+
+          <div className="col-md-3">
+            <label className="form-label fw-semibold">Año</label>
+            <input
               type="number"
-              min={2000}
-              max={2100}
+              className="form-control"
               value={year}
-              onChange={(e) =>
-                setYear(e.target.value ? Number(e.target.value) : "")
-              }
+              onChange={(e) => setYear(e.target.value ? Number(e.target.value) : "")}
               placeholder="2025"
             />
           </div>
 
-          <div className="col-md-2">
-            <label className="form-label">Semestre</label>
+          <div className="col-md-3">
+            <label className="form-label fw-semibold">Semestre</label>
             <select
               className="form-select"
               value={semester}
               onChange={(e) =>
-                setSemester(e.target.value ? Number(e.target.value) : "")
+                setSemester(e.target.value ? (Number(e.target.value) as 1 | 2) : "")
               }
             >
               <option value="">—</option>
@@ -165,73 +172,35 @@ export default function UploadPage() {
             </select>
           </div>
 
-          <div className="col-md-12">
-            <label className="form-label">Descripción</label>
+          <div className="col-12">
+            <label className="form-label fw-semibold">Descripción</label>
             <textarea
               className="form-control"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Breve descripción del contenido…"
+              placeholder="Breve descripción del contenido."
             />
           </div>
 
-          <div className="col-md-12">
-            <label className="form-label">Palabras clave</label>
-            <div className="d-flex gap-2">
-              <input
-                className="form-control"
-                value={kwInput}
-                onChange={(e) => setKwInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addKw())}
-                placeholder="resumen, guía, integrales…"
-              />
-              <button type="button" className="btn btn-soft" onClick={addKw}>
-                Agregar
-              </button>
-            </div>
-            <div className="mt-2 d-flex flex-wrap gap-2">
-              {keywords.map((k) => (
-                <span key={k} className="nv-chip">
-                  {k}
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-link ms-1 p-0"
-                    onClick={() => removeKw(k)}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="col-md-6">
-            <label className="form-label">Archivo PDF *</label>
+          <div className="col-12">
+            <label className="form-label fw-semibold">Archivo (PDF/JPG/PNG) *</label>
             <input
-              className="form-control"
               type="file"
-              accept="application/pdf,image/png,image/jpeg"
+              accept="application/pdf,image/jpeg,image/png"
+              className="form-control"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
               required
             />
           </div>
 
-          <div className="col-12">
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={status === "uploading" || status === "saving"}
-            >
-              {status === "uploading"
-                ? "Subiendo archivo…"
-                : status === "saving"
-                ? "Guardando…"
-                : "Subir apunte"}
+          <div className="col-12 d-grid d-sm-block">
+            <button disabled={sending} className="btn btn-primary btn-pill px-4">
+              {sending ? "Subiendo…" : "Subir apunte"}
             </button>
           </div>
         </form>
       </div>
-    </main>
+    </div>
   );
 }

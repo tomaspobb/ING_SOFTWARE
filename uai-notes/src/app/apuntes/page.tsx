@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SUBJECTS } from "@/lib/subjects";
 import UploadCTA from "@/components/UploadCTA";
+import NoteCard from "@/components/NoteCard";
 
 type Note = {
   _id: string;
@@ -12,12 +13,21 @@ type Note = {
   topic?: string;
   keywords?: string[];
   authorName?: string;
+  authorEmail?: string;
   pdfUrl?: string;
+
+  // nuevos metadatos visibles en la tarjeta
+  year?: number;
+  semester?: number;
+
+  // métricas
   downloads: number;
   views: number;
   ratingAvg: number;
   ratingCount: number;
+
   createdAt: string;
+  updatedAt?: string;
 };
 
 export default function ApuntesRepositoryPage() {
@@ -32,6 +42,15 @@ export default function ApuntesRepositoryPage() {
   const [sort, setSort] = useState("recent");
   const [year, setYear] = useState<string>("");
   const [semester, setSemester] = useState<string>("");
+
+  // años sugeridos (2025→2018)
+  const yearOptions = useMemo(() => {
+    const now = new Date().getFullYear();
+    const start = 2018;
+    const arr: number[] = [];
+    for (let y = now + 1; y >= start; y--) arr.push(y);
+    return arr;
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -61,7 +80,9 @@ export default function ApuntesRepositoryPage() {
       {/* Filtros */}
       <div className="section-card p-4 mb-4">
         <h1 className="nv-title fs-2 mb-2">Apuntes</h1>
-        <p className="nv-subtitle">Busca, filtra y explora los apuntes de Ing. Civil Informática.</p>
+        <p className="nv-subtitle">
+          Busca, filtra y explora los apuntes de Ing. Civil Informática.
+        </p>
 
         <div className="row g-3 mt-2">
           <div className="col-md-4">
@@ -102,15 +123,18 @@ export default function ApuntesRepositoryPage() {
 
           <div className="col-md-2">
             <label className="form-label">Año</label>
-            <input
-              type="number"
-              min={2018}
-              max={2099}
-              className="form-control"
+            <select
+              className="form-select"
               value={year}
               onChange={(e) => setYear(e.target.value)}
-              placeholder="2025"
-            />
+            >
+              <option value="">—</option>
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="col-md-2">
@@ -142,7 +166,7 @@ export default function ApuntesRepositoryPage() {
         </div>
       </div>
 
-      {/* Layout en 2 columnas con lógica para no duplicar CTA */}
+      {/* Resultados */}
       {loading ? (
         <div className="nv-card p-4 text-center">Cargando…</div>
       ) : err ? (
@@ -155,58 +179,63 @@ export default function ApuntesRepositoryPage() {
           </div>
         </div>
       ) : items.length === 0 ? (
-// —— CASO SIN RESULTADOS: BLOQUE FULL WIDTH CON CTA (sin borde superior) ——
-<div
-  className="p-4 rounded-4 shadow-sm fade-in"
-  style={{
-    background: "linear-gradient(to bottom right, #ffffff, #f9fafc)",
-    border: "1px solid #e5e7eb",
-  }}
->
-  <div className="fw-semibold fs-6 mb-2 text-gray-800">
-    No hay resultados con los filtros actuales.
-  </div>
+        // —— SIN RESULTADOS: bloque full width con CTA integrado
+        <div
+          className="p-4 rounded-4 shadow-sm fade-in"
+          style={{
+            background: "linear-gradient(to bottom right, #ffffff, #f9fafc)",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <div className="fw-semibold fs-6 mb-2 text-gray-800">
+            No hay resultados con los filtros actuales.
+          </div>
 
-  <p className="text-secondary small mb-4">
-    Prueba cambiando la asignatura o las palabras clave.  
-    También puedes compartir tu propio material para que otros lo encuentren y ayudes a la comunidad UAI:
-  </p>
+          <p className="text-secondary small mb-4">
+            Prueba cambiando la asignatura o las palabras clave. También puedes
+            compartir tu propio material para que otros lo encuentren y ayudes a la
+            comunidad UAI:
+          </p>
 
-  <div
-    className="p-4 rounded-4 shadow-sm"
-    style={{
-      background: "linear-gradient(to right, #f4f7ff, #f0f5ff)",
-      border: "none",
-      boxShadow: "0 4px 16px rgba(59,130,246,0.08)",
-    }}
-  >
-    <UploadCTA />
-  </div>
-</div>
-
+          <div
+            className="p-4 rounded-4 shadow-sm"
+            style={{
+              background: "linear-gradient(to right, #f4f7ff, #f0f5ff)",
+              border: "none",
+              boxShadow: "0 4px 16px rgba(59,130,246,0.08)",
+            }}
+          >
+            <UploadCTA />
+          </div>
+        </div>
       ) : (
-        // —— CASO CON RESULTADOS: grilla + CTA lateral (uno solo) ——
+        // —— CON RESULTADOS: grilla + CTA lateral
         <div className="row g-4">
           <div className="col-lg-8">
             <div className="row g-3">
               {items.map((n) => (
                 <div className="col-md-6" key={n._id}>
-                  <div className="nv-card p-3 h-100">
-                    <div className="small text-secondary mb-1">{n.subject}</div>
-                    <h3 className="h6 mb-1">{n.title}</h3>
-                    {n.description && (
-                      <div className="small text-secondary nv-ellipsis-1">{n.description}</div>
-                    )}
-                    <a className="btn btn-soft btn-sm mt-3" href={`/apuntes/${n._id}`}>
-                      Ver
-                    </a>
-                  </div>
+                  <NoteCard
+                    id={n._id}
+                    title={n.title}
+                    description={n.description}
+                    subject={n.subject}
+                    topic={n.topic}
+                    authorName={n.authorName}
+                    year={n.year}
+                    semester={n.semester}
+                    downloads={n.downloads}
+                    views={n.views}
+                    ratingAvg={n.ratingAvg}
+                    ratingCount={n.ratingCount}
+                    keywords={n.keywords}
+                    href={`/apuntes/${n._id}`}
+                  />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* CTA lateral solo cuando hay resultados */}
           <div className="col-lg-4">
             <div style={{ position: "sticky", top: 96 }}>
               <UploadCTA />
