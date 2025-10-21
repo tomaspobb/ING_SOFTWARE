@@ -1,0 +1,23 @@
+@startuml
+left to right direction
+title Notivium — Estudiante vs. Administrador
+
+actor Estudiante
+actor Administrador
+
+rectangle "Interfaz Web" {
+  Estudiante --> (Buscar / Filtrar apuntes)
+  Estudiante --> (Ver / Descargar apuntes)
+  Estudiante --> (Valorar o Comentar)
+  Estudiante --> (Reportar contenido)
+}
+
+rectangle "Moderación" {
+  Administrador --> (Revisar reportes)
+  Administrador --> (Aprobar / Rechazar apuntes)
+  Administrador --> (Gestionar comentarios)
+}
+
+(Reportar contenido) --> (Revisar reportes)
+
+@enduml

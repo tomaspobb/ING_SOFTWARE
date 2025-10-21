@@ -1,0 +1,23 @@
+@startuml
+title Secuencia resumida: Valorar Apunte
+
+actor Estudiante as E
+boundary UI
+control ControladorContenido as CC
+control RepoValoraciones as RV
+entity Apunte as AP
+database DB
+
+E -> UI : clic "Valorar (4★)"
+UI -> CC : valorar(apunteId, puntaje, usuario)
+CC -> RV : existeDe(usuario, apunteId)?
+RV -> DB : SELECT ...
+DB --> RV : resultado
+alt no existe
+  CC -> RV : save(Valoracion)
+  RV -> DB : INSERT ...
+  CC -> AP : calcularPromedio()
+end
+CC --> UI : confirmación
+
+@enduml

@@ -1,0 +1,7 @@
+.card{ border:1px solid #edf0f6; border-radius:14px; padding:14px; background:#fff; }
+.metaRow{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.badge{ padding:.2rem .55rem; border-radius:999px; background:#f1f5ff; border:1px solid #e5eaff; font-weight:600; font-size:.8rem;}
+.kpis{ display:flex; align-items:center; gap:14px; color:#667085; font-size:.9rem;}
+.title{ font-size:1.05rem; font-weight:700; margin:4px 0 6px; letter-spacing:-.01em;}
+.desc{ color:#6b7280; font-size:.92rem; margin:0 0 .25rem; }
+.footer{ display:flex; align-items:center; justify-content:space-between; margin-top:.35rem; }

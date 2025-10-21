@@ -1,10 +1,11 @@
+// src/components/Navbar.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useEditorMode } from "./EditorModeProvider";
-import { LogOut } from "lucide-react"; // ícono puerta de salida
+import { LogOut } from "lucide-react"; // reemplázalo por un <i> si no usas lucide
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -47,6 +48,7 @@ export default function Navbar() {
                     Apuntes
                   </Link>
                 </li>
+
                 <li className="nav-item">
                   <Link
                     className={`nav-link nv-link ${isActive("/ranking") ? "active" : ""}`}
@@ -56,6 +58,29 @@ export default function Navbar() {
                     Ranking
                   </Link>
                 </li>
+
+                <li className="nav-item">
+                  <Link
+                    className={`nav-link nv-link ${isActive("/mis-apuntes") ? "active" : ""}`}
+                    href="/mis-apuntes"
+                    aria-current={isActive("/mis-apuntes") ? "page" : undefined}
+                  >
+                    Mis apuntes
+                  </Link>
+                </li>
+
+                {/* Moderación: solo admin y con switch activado */}
+                {isAdmin && editorMode && (
+                  <li className="nav-item">
+                    <Link
+                      className={`nav-link nv-link ${isActive("/moderacion") ? "active" : ""}`}
+                      href="/moderacion"
+                      aria-current={isActive("/moderacion") ? "page" : undefined}
+                    >
+                      Moderación
+                    </Link>
+                  </li>
+                )}
               </ul>
             )}
           </div>
@@ -66,6 +91,7 @@ export default function Navbar() {
               <span className="text-secondary">Cargando…</span>
             ) : isAuthed ? (
               <>
+                {/* Switch Editor visible solo si es admin */}
                 {isAdmin && (
                   <div className="form-check form-switch me-2 text-white opacity-90">
                     <input

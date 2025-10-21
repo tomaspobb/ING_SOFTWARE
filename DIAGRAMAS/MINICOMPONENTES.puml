@@ -1,0 +1,56 @@
+@startuml
+title Contexto Minimo Notivium (Componentes)
+
+actor Estudiante as E
+actor Administrador as A
+
+package "Interfaz Web" {
+  [UI Web] <<boundary>>
+}
+
+package "Aplicación" {
+  [ControladorContenido] <<controller>>
+  [ControladorModeracion] <<controller>>
+}
+
+package "Persistencia" {
+  [RepoApuntes] <<repository>>
+  [RepoComentarios] <<repository>>
+  [RepoValoraciones] <<repository>>
+}
+
+database "Base de Datos" as DB
+
+package "Dominio" {
+  [Apunte] <<entity>>
+  [Comentario] <<entity>>
+  [Valoracion] <<entity>>
+  [DecisionModeracion] <<entity>>
+}
+
+' Interacciones principales
+E --> [UI Web] : buscar/subir\nvalorar/comentar/descargar
+A --> [UI Web] : moderar\ncambiar estado
+
+[UI Web] --> [ControladorContenido]
+[UI Web] --> [ControladorModeracion]
+
+[ControladorContenido] --> [RepoApuntes]
+[ControladorContenido] --> [RepoComentarios]
+[ControladorContenido] --> [RepoValoraciones]
+
+[ControladorModeracion] --> [RepoApuntes]
+[ControladorModeracion] --> [RepoComentarios]
+
+[RepoApuntes] --> DB
+[RepoComentarios] --> DB
+[RepoValoraciones] --> DB
+
+' Lógica experta en el dominio
+[ControladorContenido] --> [Apunte] : delega operaciones
+[ControladorContenido] --> [Comentario]
+[ControladorContenido] --> [Valoracion]
+[ControladorModeracion] --> [DecisionModeracion]
+[ControladorModeracion] --> [Apunte] : cambiarEstado(decisión)
+
+@enduml
