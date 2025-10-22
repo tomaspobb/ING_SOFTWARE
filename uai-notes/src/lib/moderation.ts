@@ -1,14 +1,11 @@
 // src/lib/moderation.ts
-const BAD = [
-  "weon","ql","qliao","culiao","culia","concha","maricon","ctm","ctmre","perra",
-  "puta","puto","imbecil","imbécil","idiota","estupido","estúpido","hueon",
-  "huev","hueón","tonto","lame","monga","mierda"
+export const BAD_WORDS = [
+  "weon", "weon@", "maricon", "maricón", "qlo", "culiao", "culiado",
+  "mierda", "puta", "conchetumadre", "ctm", "hdp", "hueon", "hueón",
+  "imbecil", "imbécil", "idiota"
 ];
 
-export function needsModeration(text: string) {
+export function hasBadWords(text: string): boolean {
   const t = (text || "").toLowerCase();
-  return BAD.some(b => t.includes(b));
+  return BAD_WORDS.some(w => t.includes(w));
 }
-
-export const ALWAYS_MODERATE_COMMENTS =
-  (process.env.ALWAYS_MODERATE_COMMENTS ?? "false").toLowerCase() === "true";

@@ -1,0 +1,67 @@
+@startuml
+' ===== Estilo visual mejorado para presentación Notivium =====
+skinparam dpi 200
+skinparam shadowing false
+skinparam linetype ortho
+skinparam roundcorner 20
+skinparam classBackgroundColor #F8FAFC
+skinparam classBorderColor #334155
+skinparam classArrowColor #64748B
+skinparam classFontColor #1E293B
+skinparam classFontSize 16
+skinparam ArrowThickness 1.2
+skinparam ArrowFontColor #334155
+skinparam ArrowFontSize 14
+skinparam classAttributeFontColor #475569
+skinparam classAttributeFontSize 13
+skinparam titleFontColor #1E293B
+skinparam titleFontSize 18
+
+title **Identificación de Clases y Relaciones — Notivium**
+
+left to right direction
+
+class Usuario {
+  + id
+  + nombre
+  + emailInstitucional
+  + esAdmin
+}
+
+class Apunte {
+  + titulo
+  + descripcion
+  + fechaSubida
+  + estado
+}
+
+class Comentario {
+  + texto
+  + fecha
+}
+
+class Valoracion {
+  + puntaje
+  + fecha
+}
+
+class DecisionModeracion {
+  + decision
+  + motivo
+  + fecha
+}
+
+class Administrador {
+  <<extends>> Usuario
+}
+
+' ==== Relaciones ====
+Usuario "1" --> "0..*" Apunte : crea
+Apunte "1" --> "0..*" Comentario : contiene
+Apunte "1" --> "0..*" Valoracion : recibe
+Administrador "1" --> "0..*" DecisionModeracion : aplica
+DecisionModeracion --> Apunte : modifica
+Comentario --> Usuario : escrito por
+Valoracion --> Usuario : emitida por
+
+@enduml

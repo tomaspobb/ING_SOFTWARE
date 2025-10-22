@@ -1,9 +1,10 @@
+// src/app/mis-apuntes/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import NoteCard from "@/components/NoteCard";
 import Link from "next/link";
+import NoteCard from "@/components/NoteCard";
 
 type Note = {
   _id: string;
@@ -31,32 +32,33 @@ export default function MisApuntesPage() {
   const [err, setErr] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  // Cargar mis apuntes
   useEffect(() => {
     if (status !== "authenticated") return;
     setLoading(true);
     setErr(null);
+
     fetch("/api/notes/mine")
       .then(async (r) => {
-        const json = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(json?.error || "FETCH_ERROR");
-        return json;
+        const j = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(j?.error || "FETCH_ERROR");
+        return j;
       })
-      .then((d) => setItems(d?.data ?? []))
+      .then((j) => setItems(j.data ?? []))
       .catch((e) => setErr(e.message || "FETCH_ERROR"))
       .finally(() => setLoading(false));
   }, [status]);
 
   async function handleDelete(note: Note) {
-    if (!confirm(`¿Eliminar "${note.title}"? Esto borra el PDF del Blob y su ficha en la BD.`)) {
+    if (!confirm(`¿Eliminar "${note.title}"? Se borrará el archivo y todos sus datos asociados.`)) {
       return;
     }
     try {
       setDeleting(note._id);
       const r = await fetch(`/api/notes/${note._id}`, { method: "DELETE" });
-      const json = await r.json().catch(() => null);
-      if (!r.ok) throw new Error(json?.error || "DELETE_ERROR");
+      const j = await r.json().catch(() => null);
+      if (!r.ok) throw new Error(j?.error || "DELETE_ERROR");
 
-      // elimina del estado
       setItems((prev) => prev.filter((n) => n._id !== note._id));
     } catch (e: any) {
       alert(`No se pudo eliminar: ${e?.message || "ERROR"}`);
@@ -122,22 +124,24 @@ export default function MisApuntesPage() {
                 <NoteCard
                   id={n._id}
                   title={n.title}
-                  description={n.description}
+                  description={n.description || ""}
                   subject={n.subject}
-                  topic={n.topic}
-                  authorName={n.authorName}
+                  topic={n.topic || ""}
+                  authorName={n.authorName || ""}
                   year={n.year}
                   semester={n.semester}
                   downloads={n.downloads}
                   views={n.views}
                   ratingAvg={n.ratingAvg}
                   ratingCount={n.ratingCount}
-                  keywords={n.keywords}
+                  keywords={n.keywords || []}
                   href={`/apuntes/${n._id}`}
                 />
+
+                {/* Botón de borrar, flotante arriba a la derecha */}
                 <button
                   className="btn btn-light btn-sm position-absolute"
-                  style={{ top: 8, right: 8, borderRadius: 999 }}
+                  style={{ top: 10, right: 10, borderRadius: 999, boxShadow: "0 4px 12px rgba(0,0,0,.08)" }}
                   title="Eliminar apunte"
                   disabled={deleting === n._id}
                   onClick={() => handleDelete(n)}

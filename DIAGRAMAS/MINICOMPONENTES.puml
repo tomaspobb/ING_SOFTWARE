@@ -1,5 +1,5 @@
 @startuml
-title Contexto Minimo Notivium (Componentes)
+title Contexto Minimo Notivium
 
 actor Estudiante as E
 actor Administrador as A

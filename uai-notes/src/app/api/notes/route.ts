@@ -12,8 +12,11 @@ export const dynamic = "force-dynamic";
 function buildSearchQuery(params: URLSearchParams) {
   const q: any = { rejected: { $ne: true } };
 
-  const moderated = (params.get("moderated") ?? "true").toLowerCase() !== "false";
-  if (moderated) q.moderated = true;
+  // moderated: "true" | "false" | "all"
+  const moderatedParam = (params.get("moderated") || "true").toLowerCase();
+  if (moderatedParam === "true") q.moderated = true;
+  else if (moderatedParam === "false") q.moderated = false;
+  // "all" => no agrega filtro de moderated (pero sigue excluyendo rejected)
 
   const subject = params.get("subject");
   if (subject && SUBJECTS.includes(subject)) q.subject = subject;
@@ -111,7 +114,7 @@ export async function POST(req: NextRequest) {
       authorName: session?.user?.name || String(body.authorName || ""),
       authorEmail: session?.user?.email || String(body.authorEmail || ""),
       pdfUrl,
-      moderated: false,
+      moderated: false,  // entra a moderación
       rejected: false,
     } as TNote);
 

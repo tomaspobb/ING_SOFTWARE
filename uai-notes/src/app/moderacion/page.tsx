@@ -1,152 +1,145 @@
-// src/app/moderacion/page.tsx
 "use client";
-
 import { useEffect, useState } from "react";
+import NoteCard from "@/components/NoteCard"; // tu tarjeta bonita
+import Link from "next/link";
 
 type Note = {
-  _id: string;
-  title: string;
-  subject: string;
-  authorName?: string;
-  authorEmail?: string;
-  year?: number;
-  semester?: number;
-  pdfUrl?: string;
-  createdAt: string;
+  _id: string; title: string; subject: string; topic?: string;
+  authorName?: string; year?: number; semester?: number;
+  downloads: number; views: number; ratingAvg: number; ratingCount: number;
+  keywords?: string[];
 };
 
-type CommentT = {
-  _id: string;
-  noteId: string;
-  text: string;
-  userEmail: string;
-  userName?: string;
-  createdAt: string;
+type Comment = {
+  _id: string; noteId: string; userName?: string; userEmail: string;
+  text: string; createdAt: string; moderated: boolean;
 };
 
 export default function ModeracionPage() {
-  const [tab, setTab] = useState<"notes" | "comments">("notes");
   const [notes, setNotes] = useState<Note[]>([]);
-  const [comments, setComments] = useState<CommentT[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    const fetchAll = async () => {
-      const [nr, cr] = await Promise.all([
-        fetch("/api/moderation/notes"),
-        fetch("/api/moderation/comments"),
+  async function loadAll() {
+    setBusy(true);
+    try {
+      const [n, c] = await Promise.all([
+        fetch("/api/notes?moderated=false&limit=100").then(r => r.json()),
+        fetch("/api/moderation/comments?pending=1").then(r => r.json()),
       ]);
-      const nj = await nr.json().catch(() => null);
-      const cj = await cr.json().catch(() => null);
-      setNotes(nj?.data ?? []);
-      setComments(cj?.data ?? []);
-      setLoading(false);
-    };
-    fetchAll();
-  }, []);
+      setNotes(n?.data ?? []);
+      setComments(c?.data ?? []);
+    } finally { setBusy(false); }
+  }
+
+  useEffect(() => { loadAll(); }, []);
 
   async function approveNote(id: string) {
-    if (!confirm("¿Aprobar este apunte?")) return;
+    const ok = confirm("¿Aprobar este apunte?");
+    if (!ok) return;
     const r = await fetch(`/api/notes/${id}`, { method: "PATCH" });
-    if (r.ok) setNotes((l) => l.filter((n) => n._id !== id));
+    const j = await r.json().catch(() => null);
+    if (!r.ok) return alert(j?.error || "PATCH_ERROR");
+    setNotes(list => list.filter(x => x._id !== id));
   }
+
   async function rejectNote(id: string) {
-    if (!confirm("¿Rechazar y borrar este apunte?")) return;
+    const ok = confirm("¿Rechazar y borrar este apunte?");
+    if (!ok) return;
     const r = await fetch(`/api/notes/${id}`, { method: "DELETE" });
-    if (r.ok) setNotes((l) => l.filter((n) => n._id !== id));
+    const j = await r.json().catch(() => null);
+    if (!r.ok) return alert(j?.error || "DELETE_ERROR");
+    setNotes(list => list.filter(x => x._id !== id));
   }
 
   async function approveComment(id: string) {
-    if (!confirm("¿Aprobar comentario?")) return;
-    const r = await fetch(`/api/comments/${id}`, { method: "PATCH" });
-    if (r.ok) setComments((l) => l.filter((c) => c._id !== id));
+    const r = await fetch(`/api/comments/${id}`, { method: "PATCH", body: JSON.stringify({ approve: true }), headers: { "Content-Type": "application/json" }});
+    const j = await r.json().catch(() => null);
+    if (!r.ok) return alert(j?.error || "PATCH_ERROR");
+    setComments(list => list.filter(x => x._id !== id));
   }
+
   async function rejectComment(id: string) {
-    if (!confirm("¿Eliminar comentario?")) return;
+    const ok = confirm("¿Eliminar comentario?");
+    if (!ok) return;
     const r = await fetch(`/api/comments/${id}`, { method: "DELETE" });
-    if (r.ok) setComments((l) => l.filter((c) => c._id !== id));
+    const j = await r.json().catch(() => null);
+    if (!r.ok) return alert(j?.error || "DELETE_ERROR");
+    setComments(list => list.filter(x => x._id !== id));
   }
 
   return (
     <div className="container-nv my-4">
-      <div className="section-card p-4 mb-3 d-flex align-items-center justify-content-between">
-        <div>
-          <h1 className="nv-title fs-3 mb-1">Moderación</h1>
-          <div className="text-secondary">Aprueba o rechaza contenido enviado por la comunidad.</div>
+      <div className="section-card p-4 mb-3">
+        <h1 className="nv-title fs-2 mb-1">Moderación</h1>
+        <p className="nv-subtitle m-0">Aprueba o rechaza apuntes y comentarios pendientes.</p>
+      </div>
+
+      <div className="row g-4">
+        <div className="col-lg-6">
+          <div className="nv-card p-3">
+            <div className="fw-semibold mb-2">Apuntes pendientes</div>
+            {notes.length === 0 ? (
+              <div className="text-secondary small">Sin pendientes.</div>
+            ) : (
+              <div className="d-grid gap-3">
+                {notes.map(n => (
+                  <div key={n._id} className="nv-card p-3">
+                    <NoteCard
+                      id={n._id}
+                      title={n.title}
+                      description=""
+                      subject={n.subject}
+                      topic={n.topic}
+                      authorName={n.authorName || "-"}
+                      year={n.year}
+                      semester={n.semester}
+                      downloads={n.downloads}
+                      views={n.views}
+                      ratingAvg={n.ratingAvg}
+                      ratingCount={n.ratingCount}
+                      keywords={n.keywords || []}
+                      href={`/apuntes/${n._id}`}
+                      compact
+                    />
+                    <div className="d-flex gap-2 mt-2">
+                      <button className="btn btn-success btn-sm" onClick={() => approveNote(n._id)}>✔ Aprobar</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => rejectNote(n._id)}>✖ Rechazar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="btn-group">
-          <button className={`btn btn-light ${tab === "notes" ? "active" : ""}`} onClick={() => setTab("notes")}>
-            Apuntes
-          </button>
-          <button className={`btn btn-light ${tab === "comments" ? "active" : ""}`} onClick={() => setTab("comments")}>
-            Comentarios
-          </button>
+
+        <div className="col-lg-6">
+          <div className="nv-card p-3">
+            <div className="fw-semibold mb-2">Comentarios pendientes</div>
+            {comments.length === 0 ? (
+              <div className="text-secondary small">Sin pendientes.</div>
+            ) : (
+              <div className="d-grid gap-3">
+                {comments.map(c => (
+                  <div key={c._id} className="nv-card p-3">
+                    <div className="small opacity-75 mb-1">
+                      {c.userName || c.userEmail} · {new Date(c.createdAt).toLocaleString()}
+                    </div>
+                    <div className="mb-2">{c.text}</div>
+                    <div className="d-flex gap-2">
+                      <Link className="btn btn-soft btn-sm" href={`/apuntes/${c.noteId}`}>Ver apunte</Link>
+                      <button className="btn btn-success btn-sm" onClick={() => approveComment(c._id)}>✔ Aprobar</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => rejectComment(c._id)}>🗑 Eliminar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {loading ? (
-        <div className="nv-card p-4">Cargando…</div>
-      ) : tab === "notes" ? (
-        <div className="d-grid gap-3">
-          {notes.length === 0 ? (
-            <div className="nv-card p-4">No hay apuntes en cola 🎉</div>
-          ) : (
-            notes.map((n) => (
-              <div key={n._id} className="nv-card p-3 d-flex align-items-start justify-content-between gap-3">
-                <div>
-                  <div className="small text-secondary mb-1">{n.subject}</div>
-                  <div className="fw-semibold">{n.title}</div>
-                  <div className="text-secondary small">
-                    {n.authorName || "—"} • {n.authorEmail || "—"} · {new Date(n.createdAt).toLocaleString()}
-                    {n.year ? <> · {n.year}/{n.semester ?? "-"}</> : null}
-                  </div>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                  {n.pdfUrl ? (
-                    <a className="btn btn-soft btn-sm" href={n.pdfUrl} target="_blank" rel="noreferrer">
-                      <i className="bi bi-eye me-1" /> Ver
-                    </a>
-                  ) : null}
-                  <button className="btn btn-success btn-sm" onClick={() => approveNote(n._id)}>
-                    <i className="bi bi-check-lg me-1" /> Aprobar
-                  </button>
-                  <button className="btn btn-danger btn-sm" onClick={() => rejectNote(n._id)}>
-                    <i className="bi bi-x-lg me-1" /> Rechazar
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      ) : (
-        <div className="d-grid gap-3">
-          {comments.length === 0 ? (
-            <div className="nv-card p-4">No hay comentarios en cola 🎉</div>
-          ) : (
-            comments.map((c) => (
-              <div key={c._id} className="nv-card p-3 d-flex align-items-start justify-content-between gap-3">
-                <div>
-                  <div className="fw-semibold mb-1">{c.userName || c.userEmail}</div>
-                  <div className="text-secondary small mb-1">{new Date(c.createdAt).toLocaleString()}</div>
-                  <div>{c.text}</div>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                  <a className="btn btn-soft btn-sm" href={`/apuntes/${c.noteId}`} target="_blank">
-                    <i className="bi bi-box-arrow-up-right me-1" /> Ir al apunte
-                  </a>
-                  <button className="btn btn-success btn-sm" onClick={() => approveComment(c._id)}>
-                    <i className="bi bi-check-lg me-1" /> Aprobar
-                  </button>
-                  <button className="btn btn-danger btn-sm" onClick={() => rejectComment(c._id)}>
-                    <i className="bi bi-x-lg me-1" /> Eliminar
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {busy && <div className="text-secondary small mt-3">Cargando…</div>}
     </div>
   );
 }
