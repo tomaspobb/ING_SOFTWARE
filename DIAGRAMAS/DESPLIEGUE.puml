@@ -1,0 +1,33 @@
+@startuml
+title Notivium — Diagrama de Despliegue
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+
+node "Usuario Estudiante/Admin" as User {
+  artifact "Navegador Web" as Browser
+}
+
+node "Frontend\n(Vercel Hosting)" as Front {
+  artifact "Next.js App" as FE
+}
+
+node "Backend API\n(Node.js / Express / Docker)" as BE {
+  artifact "Servicios REST" as API
+  artifact "Controladores GRASP" as Controllers
+  artifact "Repositorios (DAO)" as Repos
+}
+
+database "MongoDB Atlas Cluster" as DB
+node "Vercel Blob Storage\n(Archivos PDF / Imágenes)" as Storage
+node "Microsoft Entra ID\n(Autenticación SSO)" as SSO
+node "CDN / Proxy\n(Cloudflare)" as CDN
+
+' Conexiones
+User --> CDN : HTTPS
+CDN --> Front : HTTPS
+Front --> BE : HTTPS (API REST)
+BE --> DB : Conexión TLS segura
+BE --> Storage : Subida / Descarga
+BE --> SSO : Validación OIDC / Tokens
+
+@enduml

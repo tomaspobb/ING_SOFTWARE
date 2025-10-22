@@ -1,0 +1,40 @@
+@startuml
+title Notivium — Diagrama de Secuencia: Publicar y Moderar Apunte
+
+actor Estudiante
+actor Administrador
+
+participant "Web UI (Next.js)" as Web
+participant "API Gateway" as API
+participant "Servicio de Contenido" as SC
+participant "Servicio de Moderación" as SM
+participant "Repositorio de Apuntes (MongoDB)" as Repo
+
+== Publicación del Apunte ==
+Estudiante -> Web : Subir archivo + metadatos
+Web -> API : POST /apuntes (JSON + Blob)
+API -> SC : CrearApunte(datos, archivo)
+SC -> Repo : Guardar apunte (estado = PENDIENTE)
+Repo --> SC : Confirmación de guardado
+SC --> API : Retornar ID de apunte creado
+API --> Web : Mostrar mensaje “Apunte enviado para revisión”
+
+== Proceso de Moderación ==
+Administrador -> Web : Revisar apunte pendiente
+Web -> API : GET /apuntes?estado=PENDIENTE
+API -> SM : ObtenerApuntesPendientes()
+SM -> Repo : Buscar apuntes con estado = PENDIENTE
+Repo --> SM : Lista de apuntes pendientes
+SM --> API : Retornar lista de revisión
+API --> Web : Mostrar apuntes al administrador
+
+== Decisión de Moderación ==
+Administrador -> Web : Aprobar o Rechazar apunte
+Web -> API : PUT /apuntes/{id}/decisión
+API -> SM : AplicarDecision(id, decision)
+SM -> Repo : Actualizar estadoApunte = APROBADO o RECHAZADO
+Repo --> SM : Confirmación de actualización
+SM --> API : Notificar resultado
+API --> Web : Mostrar mensaje de confirmación
+
+@enduml

@@ -1,0 +1,61 @@
+@startuml
+title Notivium — Diagrama de Componentes
+skinparam dpi 300
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam backgroundColor #FDFDFD
+skinparam component {
+  BackgroundColor<<frontend>> #DDEAF9
+  BackgroundColor<<backend>> #EAF7EA
+  BackgroundColor<<database>> #FFF4E3
+  BackgroundColor<<external>> #F3E8FF
+}
+
+package "Frontend (Next.js + React)" {
+  [Web UI] <<frontend>>
+  [Gestor de Sesión (NextAuth)] <<frontend>>
+  [Gestor de Subida de Archivos] <<frontend>>
+}
+
+package "Backend (Node.js / Express / API REST)" {
+  [API Gateway] <<backend>>
+  [Servicio de Contenido] <<backend>>
+  [Servicio de Moderación] <<backend>>
+  [Servicio de Valoración] <<backend>>
+  [Servicio de Autenticación] <<backend>>
+}
+
+package "Persistencia (MongoDB Atlas)" {
+  [Repositorio de Apuntes] <<database>>
+  [Repositorio de Comentarios] <<database>>
+  [Repositorio de Valoraciones] <<database>>
+  [Repositorio de Usuarios] <<database>>
+}
+
+package "Servicios Externos" {
+  [Microsoft Entra ID (SSO)] <<external>>
+  [Azure Blob Storage (Archivos)] <<external>>
+}
+
+' --- Relaciones ---
+[Web UI] --> [API Gateway] : Peticiones HTTP/JSON
+[Gestor de Sesión (NextAuth)] --> [Microsoft Entra ID (SSO)] : Login / Tokens OIDC
+[Gestor de Subida de Archivos] --> [Azure Blob Storage (Archivos)] : Subida / Descarga PDF
+
+[API Gateway] --> [Servicio de Contenido]
+[API Gateway] --> [Servicio de Moderación]
+[API Gateway] --> [Servicio de Valoración]
+[API Gateway] --> [Servicio de Autenticación]
+
+[Servicio de Contenido] --> [Repositorio de Apuntes]
+[Servicio de Contenido] --> [Repositorio de Comentarios]
+[Servicio de Valoración] --> [Repositorio de Valoraciones]
+[Servicio de Autenticación] --> [Repositorio de Usuarios]
+[Servicio de Moderación] --> [Repositorio de Apuntes]
+
+[Repositorio de Apuntes] --> [MongoDB Atlas]
+[Repositorio de Comentarios] --> [MongoDB Atlas]
+[Repositorio de Valoraciones] --> [MongoDB Atlas]
+[Repositorio de Usuarios] --> [MongoDB Atlas]
+
+@enduml
