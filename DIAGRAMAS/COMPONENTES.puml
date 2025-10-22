@@ -34,13 +34,13 @@ package "Persistencia (MongoDB Atlas)" {
 
 package "Servicios Externos" {
   [Microsoft Entra ID (SSO)] <<external>>
-  [Azure Blob Storage (Archivos)] <<external>>
+  [Vercel Blob Storage (Archivos)] <<external>>
 }
 
 ' --- Relaciones ---
 [Web UI] --> [API Gateway] : Peticiones HTTP/JSON
 [Gestor de Sesión (NextAuth)] --> [Microsoft Entra ID (SSO)] : Login / Tokens OIDC
-[Gestor de Subida de Archivos] --> [Azure Blob Storage (Archivos)] : Subida / Descarga PDF
+[Gestor de Subida de Archivos] --> [Vercel Blob Storage (Archivos)] : Subida / Descarga PDF
 
 [API Gateway] --> [Servicio de Contenido]
 [API Gateway] --> [Servicio de Moderación]
