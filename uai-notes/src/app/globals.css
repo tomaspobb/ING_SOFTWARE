@@ -1,8 +1,8 @@
-/* === Notivium theme (azul–morado) — LITE === */
+/* === Notivium theme (azul–morado) — LITE+ Polished === */
 :root{
-  --nv-bg:#f5f7fb;
+  --nv-bg:#f6f8fc;                /* fondo suave */
   --nv-text:#0f172a;
-  --nv-muted:#64748b;
+  --nv-muted:#667085;
   --nv-primary:#3b82f6;
   --nv-primary-rgb:59,130,246;
   --nv-accent:#6366f1;
@@ -12,12 +12,15 @@
   --bs-body-color:var(--nv-text);
   --bs-primary:var(--nv-primary);
   --bs-primary-rgb:var(--nv-primary-rgb);
-  --bs-border-color:#e5e7eb;
-  --bs-border-radius:14px;
+  --bs-border-color:#e6eaf1;
+  --bs-border-radius:22px;        /* radio global unificado */
 }
+
 body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  background:var(--nv-bg);
+  color:var(--nv-text);
 }
 
 /* =================== Utils =================== */
@@ -30,12 +33,12 @@ body{
 /* =================== Gate / Landing =================== */
 .gate-hero{
   min-height:100vh;display:grid;place-items:center;
-  background:linear-gradient(180deg,#eaf1ff 0%,#f6f8ff 40%,#fff 100%)
+  background:linear-gradient(180deg,#eef4ff 0%,#f8fbff 45%,#ffffff 100%)
 }
 .gate-card{
   width:min(760px,92vw);border-radius:24px;overflow:hidden;
-  box-shadow:0 40px 80px rgba(2,6,23,.12),0 10px 24px rgba(2,6,23,.06);
-  border:1px solid #e5e7eb;background:#fff
+  box-shadow:0 40px 80px rgba(2,6,23,.10),0 10px 24px rgba(2,6,23,.05);
+  border:1px solid #e9edf5;background:#fff
 }
 .gate-header{
   padding:28px;color:#fff;
@@ -46,11 +49,11 @@ body{
 .gate-body{padding:28px;background:#fff}
 .ms-btn{
   display:flex;align-items:center;justify-content:center;gap:.75rem;width:100%;
-  height:64px;border-radius:16px;border:1px solid #e5e7eb;background:#fff;color:#0f172a;
+  height:64px;border-radius:16px;border:1px solid #e9edf6;background:#fff;color:#0f172a;
   font-weight:600;transition:all .18s
 }
 .ms-btn:hover{transform:translateY(-1px);box-shadow:0 18px 35px rgba(59,130,246,.14)}
-.ms-btn:focus-visible{outline:3px solid rgba(59,130,246,.35);outline-offset:2px}
+.ms-btn:focus-visible{outline:3px solid rgba(59,130,246,.28);outline-offset:2px}
 .ms-logo{
   width:26px;height:26px;border-radius:4px;
   background:conic-gradient(#f35325 0 25%,#81bc06 0 50%,#05a6f0 0 75%,#ffba08 0 100%)
@@ -59,24 +62,31 @@ body{
 
 /* =================== Generic sections & chips =================== */
 .section-card{
-  background:#fff;border:1px solid var(--bs-border-color);border-radius:22px;
-  box-shadow:0 30px 60px rgba(2,6,23,.08),0 8px 20px rgba(2,6,23,.05)
+  background:linear-gradient(180deg,#ffffff 0%,#fcfeff 100%);
+  border:1px solid var(--bs-border-color);
+  border-radius:22px;
+  box-shadow:
+    0 28px 60px rgba(2,6,23,.08),
+    0 10px 24px rgba(2,6,23,.05),
+    inset 0 0 0 1px #edf1f7;
 }
 .nv-chip{
-  display:inline-flex;align-items:center;gap:.5rem;padding:.375rem .6rem;
-  border:1px solid var(--bs-border-color);border-radius:999px;background:#fff;
+  display:inline-flex;align-items:center;gap:.5rem;padding:.38rem .68rem;
+  border:1px solid #e8edf6;border-radius:999px;background:#fff;
   color:var(--nv-muted);font-weight:600
 }
 
 /* =================== NAVBAR =================== */
 .nv-navbar-wrap{width:min(1100px,96vw);margin:12px auto 0}
 .nv-navbar{
-  background:linear-gradient(135deg,var(--nv-primary),#2563eb 55%,var(--nv-accent));
-  color:#fff;border-radius:18px;
-  box-shadow:0 18px 40px rgba(2,6,23,.12),0 6px 16px rgba(2,6,23,.08);
-  border:1px solid rgba(255,255,255,.28);
+  background:linear-gradient(135deg,#3b82f6,#2563eb 55%,#6366f1);
+  color:#fff;border-radius:22px;
+  box-shadow:0 18px 40px rgba(2,6,23,.12),0 6px 16px rgba(2,6,23,.06),
+             inset 0 0 0 1px rgba(255,255,255,.22);
+  backdrop-filter:saturate(120%) blur(6px);
+  -webkit-backdrop-filter:saturate(120%) blur(6px);
   min-height:64px;
-  padding:.6rem 2.5rem; /* 👉 aire lateral amplio */
+  padding:.6rem 2.25rem;
   display:flex;align-items:center;justify-content:space-between
 }
 
@@ -84,32 +94,30 @@ body{
 .nv-brand{
   color:#fff!important;font-weight:800;letter-spacing:-.02em;
   font-size:1.25rem;line-height:1;display:inline-flex;align-items:center;
-  margin:0 1rem 0 .75rem; /* 👉 más aire contra borde izquierdo */
+  margin:0 1rem 0 .75rem;
 }
 
 /* Links principales */
 .nv-link{
-  color:#f1f5ff!important;padding:.35rem .75rem;border-radius:8px;margin:0 .25rem;
+  color:#eef2ff!important;padding:.38rem .78rem;border-radius:10px;margin:0 .25rem;
   transition:background .15s ease,color .15s ease
 }
-.nv-link:hover{background:rgba(255,255,255,.12);color:#fff!important}
-.nv-link.active{background:rgba(255,255,255,.18);color:#fff!important}
+.nv-link:hover{background:rgba(255,255,255,.14);color:#fff!important}
+.nv-link.active{background:rgba(255,255,255,.2);color:#fff!important}
 
 /* Usuario (nombre) */
 .nv-username{
   color:#eef2ff;font-weight:600;max-width:220px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  margin-right:1.25rem; /* 👉 aire antes del botón circular */
-  padding:.35rem .75rem;border-radius:8px
+  margin-right:1.1rem;padding:.38rem .75rem;border-radius:10px
 }
 
 /* Botón logout circular */
 .nv-logout-btn{
-  width:38px;height:38px;border-radius:50%;
-  border:2px solid rgba(255,255,255,.8);
+  width:40px;height:40px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.85);
   display:flex;align-items:center;justify-content:center;
-  color:#fff;background:transparent;
-  margin-right:.75rem; /* 👉 aire del borde derecho */
+  color:#fff;background:transparent;margin-right:.6rem;
   transition:background .2s,transform .15s
 }
 .nv-logout-btn:hover{background:rgba(255,255,255,.18);transform:translateY(-1px)}
@@ -119,25 +127,26 @@ body{
 .form-check-label{color:#eef2ff}
 
 /* Botón outline en navbar */
-.btn-outline-light.btn-sm{border-color:rgba(255,255,255,.8)}
-.btn-outline-light.btn-sm:hover{background:rgba(255,255,255,.16);color:#fff}
+.btn-outline-light.btn-sm{border-color:rgba(255,255,255,.85)}
+.btn-outline-light.btn-sm:hover{background:rgba(255,255,255,.18);color:#fff}
 
 /* =================== CARDS =================== */
 .nv-card{
-  border:1px solid #f0f2f7;border-radius:16px;background:#fff;
+  background:linear-gradient(180deg,#ffffff 0%,#fcfeff 100%);
+  border:1px solid #e9eef6;border-radius:22px;
   transition:transform .15s,box-shadow .15s,border-color .15s
 }
 .nv-card:hover{
   transform:translateY(-2px);
-  box-shadow:0 12px 28px rgba(2,6,23,.06),0 4px 12px rgba(2,6,23,.04);
-  border-color:#e6ebf3
+  box-shadow:0 14px 30px rgba(2,6,23,.07),0 6px 16px rgba(2,6,23,.04);
+  border-color:#dfe6f2
 }
 .nv-card::before{
-  content:"";display:block;height:2px;border-top-left-radius:16px;border-top-right-radius:16px;
+  content:"";display:block;height:2px;border-top-left-radius:22px;border-top-right-radius:22px;
   background:linear-gradient(90deg,rgba(59,130,246,.45),rgba(99,102,241,.45));opacity:.55
 }
 .badge-soft{
-  background:#f8fafc;border:1px solid var(--bs-border-color);color:var(--nv-text);
+  background:#f7faff;border:1px solid #e7ecf7;color:#1f2937;
   font-weight:600;border-radius:999px
 }
 
@@ -148,14 +157,14 @@ body{
   transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease
 }
 .nv-card-inner:hover{
-  box-shadow:0 22px 44px rgba(2,6,23,.12),0 10px 24px rgba(2,6,23,.08);
-  border-color:#d5dbea
+  box-shadow:0 22px 44px rgba(2,6,23,.09),0 10px 24px rgba(2,6,23,.06);
+  border-color:#d6deeb
 }
 
 /* =================== FOOTER =================== */
 .nv-footer{
   margin-top:32px;background:linear-gradient(180deg,#fff 0%,#f7f9ff 100%);
-  border-top:1px solid #e5e7eb;border-top-left-radius:16px;border-top-right-radius:16px;
+  border-top:1px solid #e8edf5;border-top-left-radius:22px;border-top-right-radius:22px;
   box-shadow:0 -6px 16px rgba(2,6,23,.04) inset
 }
 
@@ -163,12 +172,31 @@ body{
 .nv-title{font-weight:800;letter-spacing:-.02em}
 .nv-subtitle{color:var(--nv-muted);font-weight:500}
 .nv-card .card-title{font-weight:600;font-size:1rem;color:#1f2937}
-.nv-card .card-text{font-size:.9rem;line-height:1.45;color:#4b5563}
+.nv-card .card-text{font-size:.95rem;line-height:1.45;color:#475569}
 .nv-ellipsis-1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nv-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .nv-card-compact .card-body{padding-top:.9rem;padding-bottom:.9rem}
 .nv-card-compact .card-title{font-size:.975rem}
 .nv-card-compact .card-text{font-size:.875rem}
+
+/* =================== Inputs & Buttons =================== */
+.section-card .form-control,
+.section-card .form-select{
+  background:#fff;color:var(--nv-text);
+  border:1px solid #e3e8f2;
+  box-shadow:inset 0 0 0 1px rgba(2,6,23,.02);
+  border-radius:14px;
+}
+.section-card .form-control::placeholder{color:#9aa3b2}
+.section-card .form-control:focus,
+.section-card .form-select:focus{
+  border-color:#c9d6f9;
+  box-shadow:0 0 0 3px rgba(59,130,246,.12), inset 0 0 0 1px rgba(59,130,246,.08);
+}
+
+.section-card .btn-primary{box-shadow:0 6px 16px rgba(59,130,246,.22)}
+.section-card .btn-outline-secondary{border-color:#d8deea;color:#475569}
+.section-card .btn-outline-secondary:hover{background:#eef3ff;border-color:#cfd7ea}
 
 /* =================== Accessibility & Responsive =================== */
 @media (prefers-reduced-motion: reduce){
@@ -179,108 +207,22 @@ body{
   .nv-navbar{min-height:56px;padding:.5rem 1rem}
   .nv-brand{font-size:1.15rem;margin:0 .75rem 0 .5rem}
 }
-/* ======= PATCH: densidad y definición de bordes ======= */
 
-/* Navbar: menos “vacío” con blur, stroke interior y relleno translúcido */
-.nv-navbar{
-  background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(37,99,235,.95) 55%, rgba(99,102,241,.95));
-  backdrop-filter: saturate(120%) blur(6px);
-  -webkit-backdrop-filter: saturate(120%) blur(6px);
-  /* sutil trazo interior */
-  box-shadow:
-    0 18px 40px rgba(2,6,23,.12),
-    0 6px 16px rgba(2,6,23,.08),
-    inset 0 0 0 1px rgba(255,255,255,.18); /* 👈 define borde interior */
-}
-
-/* Panel grande (filtros) más “surface” */
-.section-card{
-  background: linear-gradient(180deg,#ffffff,#fcfdff);
-  box-shadow:
-    0 30px 60px rgba(2,6,23,.08),
-    0 8px 20px rgba(2,6,23,.05),
-    inset 0 0 0 1px #e9edf5;              /* 👈 delineado interior */
-}
-
-/* Cards: fondo no-tan-blanco y delineado interior sutil */
-.nv-card{
-  background: linear-gradient(180deg,#ffffff,#fcfdff);
-  box-shadow:
-    0 12px 28px rgba(2,6,23,.06),
-    0 4px 12px rgba(2,6,23,.04),
-    inset 0 0 0 1px #e8edf5;              /* 👈 interior stroke */
-  border-color: transparent;              /* el stroke lleva la definición */
-}
-.nv-card:hover{
-  box-shadow:
-    0 16px 32px rgba(2,6,23,.08),
-    0 6px 14px rgba(2,6,23,.06),
-    inset 0 0 0 1px #d6deeb;              /* 👈 realza el borde al hover */
-}
-
-/* Badges y chips: un pelín más marcados para encajar con el nuevo contraste */
-.badge-soft,
-.nv-chip{
-  background:#f9fbff;
-  border-color:#e5eaf3;
-}
-
-/* Botón de logout: borde un poco más fino para no competir con el stroke general */
-.nv-logout-btn{
-  border-width: 1.5px;
-}
-
-/* Inputs dentro de surfaces: bordes más integrados */
-.section-card .form-control{
-  border-color:#e3e8f2;
-  box-shadow: inset 0 0 0 1px rgba(2,6,23,.02);
-}
-.section-card .form-control:focus{
-  border-color:#c9d6f9;
-  box-shadow:
-    0 0 0 3px rgba(59,130,246,.12),
-    inset 0 0 0 1px rgba(59,130,246,.08);
-}
-
-/* Botones “Buscar/Limpiar”: leves ajustes para que calcen con el nuevo tono */
-.section-card .btn-primary{
-  box-shadow: 0 6px 16px rgba(59,130,246,.22);
-}
-.section-card .btn-outline-secondary{
-  border-color:#d8deea;
-  color:#475569;
-}
-.section-card .btn-outline-secondary:hover{
-  background:#eef3ff;
-  border-color:#cfd7ea;
-}
-
-/* XS: baja levemente shadows para evitar “pesadez” visual */
+/* ======= Patch final de densidad ======= */
 @media (max-width:576px){
   .section-card{box-shadow:
     0 20px 40px rgba(2,6,23,.06),
     0 6px 14px rgba(2,6,23,.04),
-    inset 0 0 0 1px #e9edf5;
-  }
+    inset 0 0 0 1px #edf1f7;}
   .nv-card{box-shadow:
     0 10px 22px rgba(2,6,23,.06),
     0 4px 10px rgba(2,6,23,.04),
-    inset 0 0 0 1px #e8edf5;
-  }
-}
-.fade-in {
-  animation: fadeInUp 0.6s ease forwards;
-  opacity: 0;
-  transform: translateY(8px);
+    inset 0 0 0 1px #e9eef6;}
 }
 
-@keyframes fadeInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-/* Quita la línea decorativa superior de nv-card en el CTA */
-.nv-card--noaccent::before {
-  display: none !important;
-}
+/* Animaciones */
+.fade-in {animation: fadeInUp 0.6s ease forwards;opacity: 0;transform: translateY(8px)}
+@keyframes fadeInUp {to {opacity: 1;transform: translateY(0)}}
+.nv-card--noaccent::before {display: none !important}
+
+.nv-upload-banner { margin-top: .35rem; margin-bottom: 1rem; }

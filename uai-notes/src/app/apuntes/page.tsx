@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { SUBJECTS } from "@/lib/subjects";
-import UploadCTA from "@/components/UploadCTA";
-import NoteCard from "@/components/NoteCard";
+import { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SUBJECTS } from '@/lib/subjects';
+import NoteCard from '@/components/NoteCard';
+import UploadBanner from '@/components/UploadBanner'; // ⬅️ nuevo banner
+import { FolderOpen, LayoutGrid, List } from 'lucide-react';
 
 type Note = {
   _id: string;
@@ -15,17 +17,12 @@ type Note = {
   authorName?: string;
   authorEmail?: string;
   pdfUrl?: string;
-
-  // nuevos metadatos visibles en la tarjeta
   year?: number;
   semester?: number;
-
-  // métricas
   downloads: number;
   views: number;
   ratingAvg: number;
   ratingCount: number;
-
   createdAt: string;
   updatedAt?: string;
 };
@@ -36,14 +33,21 @@ export default function ApuntesRepositoryPage() {
   const [err, setErr] = useState<string | null>(null);
 
   // filtros
-  const [subject, setSubject] = useState<string>("");
-  const [topic, setTopic] = useState("");
-  const [q, setQ] = useState("");
-  const [sort, setSort] = useState("recent");
-  const [year, setYear] = useState<string>("");
-  const [semester, setSemester] = useState<string>("");
+  const [subject, setSubject] = useState<string>('');
+  const [topic, setTopic] = useState('');
+  const [q, setQ] = useState('');
+  const [sort, setSort] = useState('recent');
+  const [year, setYear] = useState<string>('');
+  const [semester, setSemester] = useState<string>('');
 
-  // años sugeridos (2025→2018)
+  // vistas
+  const [viewMode, setViewMode] = useState<'grid' | 'folders' | 'list'>('grid');
+  // carpetas OCULTAS por defecto
+  const [collapsedSubjects, setCollapsedSubjects] = useState<Record<string, boolean>>(
+    Object.fromEntries(SUBJECTS.map((s) => [s, true]))
+  );
+
+  // años sugeridos
   const yearOptions = useMemo(() => {
     const now = new Date().getFullYear();
     const start = 2018;
@@ -52,14 +56,15 @@ export default function ApuntesRepositoryPage() {
     return arr;
   }, []);
 
+  // fetch
   useEffect(() => {
     const params = new URLSearchParams();
-    if (subject) params.set("subject", subject);
-    if (topic) params.set("topic", topic);
-    if (q) params.set("q", q);
-    if (year) params.set("year", year);
-    if (semester) params.set("semester", semester);
-    params.set("sort", sort);
+    if (subject) params.set('subject', subject);
+    if (topic) params.set('topic', topic);
+    if (q) params.set('q', q);
+    if (year) params.set('year', year);
+    if (semester) params.set('semester', semester);
+    params.set('sort', sort);
 
     setLoading(true);
     setErr(null);
@@ -67,31 +72,82 @@ export default function ApuntesRepositoryPage() {
     fetch(`/api/notes?${params.toString()}`)
       .then(async (r) => {
         const json = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(json?.error || "FETCH_ERROR");
+        if (!r.ok) throw new Error(json?.error || 'FETCH_ERROR');
         return json;
       })
       .then((d) => setItems(d?.data ?? []))
-      .catch((e) => setErr(e.message || "FETCH_ERROR"))
+      .catch((e) => setErr(e.message || 'FETCH_ERROR'))
       .finally(() => setLoading(false));
   }, [subject, topic, q, year, semester, sort]);
 
-  return (
-    <div className="container-nv my-4">
-      {/* Filtros */}
-      <div className="section-card p-4 mb-4">
-        <h1 className="nv-title fs-2 mb-2">Apuntes</h1>
-        <p className="nv-subtitle">
-          Busca, filtra y explora los apuntes de Ing. Civil Informática.
-        </p>
+  const groupedBySubject = useMemo(() => {
+    return items.reduce<Record<string, Note[]>>((acc, n) => {
+      const key = n.subject || 'Sin asignatura';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(n);
+      return acc;
+    }, {});
+  }, [items]);
 
-        <div className="row g-3 mt-2">
+  const toggleCollapse = (subj: string) => {
+    setCollapsedSubjects((s) => ({ ...s, [subj]: !s[subj] }));
+  };
+
+  return (
+    <motion.div
+      className="container-nv my-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35 }}
+    >
+      {/* Header */}
+      <div className="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <h1 className="nv-title fs-2 mb-0">Apuntes</h1>
+          <p className="nv-subtitle mb-0">Busca, filtra y explora los apuntes de Ing. Civil Informática.</p>
+        </div>
+
+        <div className="d-flex align-items-center gap-2">
+          <div className="btn-group" role="group">
+            <button
+              type="button"
+              className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid size={14} className="me-1" />
+              Grid
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${viewMode === 'folders' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setViewMode('folders')}
+            >
+              <FolderOpen size={14} className="me-1" />
+              Carpetas
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setViewMode('list')}
+            >
+              <List size={14} className="me-1" />
+              Lista
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <motion.div
+        className="section-card section-card--dark p-4 mb-3"
+        style={{ borderRadius: '22px' }}
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="row g-3">
           <div className="col-md-4">
             <label className="form-label">Asignatura</label>
-            <select
-              className="form-select"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            >
+            <select className="form-select" value={subject} onChange={(e) => setSubject(e.target.value)}>
               <option value="">— Todas —</option>
               {SUBJECTS.map((s) => (
                 <option key={s} value={s}>
@@ -123,11 +179,7 @@ export default function ApuntesRepositoryPage() {
 
           <div className="col-md-2">
             <label className="form-label">Año</label>
-            <select
-              className="form-select"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-            >
+            <select className="form-select" value={year} onChange={(e) => setYear(e.target.value)}>
               <option value="">—</option>
               {yearOptions.map((y) => (
                 <option key={y} value={y}>
@@ -139,11 +191,7 @@ export default function ApuntesRepositoryPage() {
 
           <div className="col-md-2">
             <label className="form-label">Semestre</label>
-            <select
-              className="form-select"
-              value={semester}
-              onChange={(e) => setSemester(e.target.value)}
-            >
+            <select className="form-select" value={semester} onChange={(e) => setSemester(e.target.value)}>
               <option value="">—</option>
               <option value="1">1</option>
               <option value="2">2</option>
@@ -152,11 +200,7 @@ export default function ApuntesRepositoryPage() {
 
           <div className="col-md-3">
             <label className="form-label">Ordenar</label>
-            <select
-              className="form-select"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
+            <select className="form-select" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="recent">Recientes</option>
               <option value="downloads">Descargas</option>
               <option value="rating">Mejor valorados</option>
@@ -164,85 +208,117 @@ export default function ApuntesRepositoryPage() {
             </select>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Banner de subida (colapsable, ocupa poco espacio por defecto) */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <UploadBanner defaultCollapsed={true} />
+      </motion.div>
 
       {/* Resultados */}
       {loading ? (
-        <div className="nv-card p-4 text-center">Cargando…</div>
+        <div className="nv-card nv-card--dark p-4 text-center mt-3" style={{ borderRadius: '22px' }}>
+          Cargando…
+        </div>
       ) : err ? (
-        <div className="nv-card p-4">
+        <div className="nv-card nv-card--dark p-4 mt-3" style={{ borderRadius: '22px' }}>
           <div className="fw-semibold mb-1">No pudimos cargar los apuntes.</div>
           <div className="text-secondary small">
-            {err === "DB_UNAVAILABLE"
-              ? "Problema de conexión con la base de datos. Intenta de nuevo más tarde."
-              : "Intenta refrescar o probar más tarde."}
+            {err === 'DB_UNAVAILABLE'
+              ? 'Problema de conexión con la base de datos. Intenta de nuevo más tarde.'
+              : 'Intenta refrescar o probar más tarde.'}
           </div>
         </div>
       ) : items.length === 0 ? (
-        // —— SIN RESULTADOS: bloque full width con CTA integrado
-        <div
-          className="p-4 rounded-4 shadow-sm fade-in"
-          style={{
-            background: "linear-gradient(to bottom right, #ffffff, #f9fafc)",
-            border: "1px solid #e5e7eb",
-          }}
-        >
-          <div className="fw-semibold fs-6 mb-2 text-gray-800">
-            No hay resultados con los filtros actuales.
-          </div>
-
-          <p className="text-secondary small mb-4">
-            Prueba cambiando la asignatura o las palabras clave. También puedes
-            compartir tu propio material para que otros lo encuentren y ayudes a la
-            comunidad UAI:
+        <div className="p-4 rounded-4 shadow-sm fade-in mt-3 nv-surface-dim" style={{ borderRadius: '22px' }}>
+          <div className="fw-semibold fs-6 mb-2">No hay resultados con los filtros actuales.</div>
+          <p className="text-secondary small mb-0">
+            Prueba cambiando la asignatura o las palabras clave. También puedes compartir tu propio material para que otros lo encuentren.
           </p>
-
-          <div
-            className="p-4 rounded-4 shadow-sm"
-            style={{
-              background: "linear-gradient(to right, #f4f7ff, #f0f5ff)",
-              border: "none",
-              boxShadow: "0 4px 16px rgba(59,130,246,0.08)",
-            }}
-          >
-            <UploadCTA />
-          </div>
         </div>
       ) : (
-        // —— CON RESULTADOS: grilla + CTA lateral
-        <div className="row g-4">
-          <div className="col-lg-8">
-            <div className="row g-3">
-              {items.map((n) => (
-                <div className="col-md-6" key={n._id}>
-                  <NoteCard
-                    id={n._id}
-                    title={n.title}
-                    description={n.description}
-                    subject={n.subject}
-                    topic={n.topic}
-                    authorName={n.authorName}
-                    year={n.year}
-                    semester={n.semester}
-                    downloads={n.downloads}
-                    views={n.views}
-                    ratingAvg={n.ratingAvg}
-                    ratingCount={n.ratingCount}
-                    keywords={n.keywords}
-                    href={`/apuntes/${n._id}`}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="row g-4 mt-2">
+          <div className="col-12">
+            {/* Carpetas */}
+            <AnimatePresence mode="popLayout">
+              {viewMode === 'folders' &&
+                Object.keys(groupedBySubject)
+                  .sort()
+                  .map((subj) => {
+                    const group = groupedBySubject[subj];
+                    const collapsed = !!collapsedSubjects[subj];
+                    return (
+                      <motion.div key={subj} layout className="mb-3">
+                        <div
+                          className="d-flex align-items-center justify-content-between p-3 rounded-3 nv-surface-dim"
+                          style={{ cursor: 'pointer', borderRadius: '18px' }}
+                          onClick={() => toggleCollapse(subj)}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 700 }}>{subj}</div>
+                            <div className="text-secondary small">{group.length} apuntes</div>
+                          </div>
+                          <div className="text-end small text-secondary">{collapsed ? 'Mostrar' : 'Ocultar'}</div>
+                        </div>
 
-          <div className="col-lg-4">
-            <div style={{ position: "sticky", top: 96 }}>
-              <UploadCTA />
-            </div>
+                        <AnimatePresence>
+                          {!collapsed && (
+                            <motion.div
+                              layout
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.25 }}
+                              className="row g-3 mt-2"
+                            >
+                              {group.map((n) => (
+                                <motion.div key={n._id} layout className="col-md-6 col-xl-4">
+                                  <NoteCard {...n} />
+                                </motion.div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+            </AnimatePresence>
+
+            {/* Grid */}
+            {viewMode === 'grid' && (
+              <motion.div layout className="row g-3">
+                {items.map((n) => (
+                  <motion.div key={n._id} layout className="col-md-6 col-xl-4">
+                    <NoteCard {...n} />
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+
+            {/* Lista */}
+            {viewMode === 'list' && (
+              <div className="list-group mt-1">
+                {items.map((n) => (
+                  <a
+                    key={n._id}
+                    href={`/apuntes/${n._id}`}
+                    className="list-group-item list-group-item-action d-flex justify-content-between align-items-start nv-surface-dim"
+                    style={{ borderRadius: 12 }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700 }}>{n.title}</div>
+                      <div className="text-secondary small">
+                        {n.subject} • {n.authorName || 'Anónimo'} • {n.year || '—'}
+                      </div>
+                    </div>
+                    <span className="btn btn-sm btn-outline-light">Ver</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
