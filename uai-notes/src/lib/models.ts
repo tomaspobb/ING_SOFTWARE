@@ -2,6 +2,7 @@
 import mongoose, { Schema } from "mongoose";
 import { SUBJECTS } from "@/lib/subjects";
 
+/* ===================== DB CONNECT (cache dev) ===================== */
 const MONGODB_URI = process.env.MONGODB_URI!;
 export async function dbConnect() {
   if (!MONGODB_URI) throw new Error("MONGODB_URI missing");
@@ -10,7 +11,7 @@ export async function dbConnect() {
   if (g._mongo.conn) return g._mongo.conn;
   if (!g._mongo.promise) {
     g._mongo.promise = mongoose.connect(MONGODB_URI, {
-      dbName: "notivium",
+      dbName: process.env.MONGODB_DB || "notivium",
       bufferCommands: false,
     });
   }
@@ -18,7 +19,17 @@ export async function dbConnect() {
   return g._mongo.conn;
 }
 
-/* ------------ Note ------------ */
+/* ===================== Helpers ===================== */
+export function toObjectId(id: string) {
+  if (!id || typeof id !== "string") return null;
+  try {
+    return new mongoose.Types.ObjectId(id);
+  } catch {
+    return null;
+  }
+}
+
+/* ===================== NOTE ===================== */
 export type TNote = {
   title: string;
   description?: string;
@@ -56,10 +67,10 @@ const NoteSchema = new Schema<TNote>(
     year: { type: Number, min: 2000, max: 2099 },
     semester: { type: Number, enum: [1, 2] },
 
-    downloads: { type: Number, default: 0 },
+    downloads: { type: Number, default: 0, index: true },
     views: { type: Number, default: 0 },
-    ratingAvg: { type: Number, default: 0 },
-    ratingCount: { type: Number, default: 0 },
+    ratingAvg: { type: Number, default: 0, index: true },
+    ratingCount: { type: Number, default: 0, index: true },
 
     moderated: { type: Boolean, default: false },
     rejected: { type: Boolean, default: false },
@@ -67,11 +78,23 @@ const NoteSchema = new Schema<TNote>(
   { timestamps: true }
 );
 
+// Índices para ranking/búsqueda
+NoteSchema.index({ subject: 1, createdAt: -1 });
+NoteSchema.index({ createdAt: -1 });
+NoteSchema.index({ downloads: -1 });
+NoteSchema.index({ ratingAvg: -1, ratingCount: -1 });
+NoteSchema.index({
+  title: "text",
+  description: "text",
+  topic: "text",
+  keywords: "text",
+});
+
 export const Note =
   (mongoose.models.Note as mongoose.Model<TNote>) ??
   mongoose.model<TNote>("Note", NoteSchema);
 
-/* ------------ Rating ------------ */
+/* ===================== RATING ===================== */
 export type TRating = {
   noteId: mongoose.Types.ObjectId | string;
   userEmail: string;
@@ -79,6 +102,7 @@ export type TRating = {
   createdAt: Date;
   updatedAt: Date;
 };
+
 const RatingSchema = new Schema<TRating>(
   {
     noteId: { type: Schema.Types.ObjectId, ref: "Note", index: true, required: true },
@@ -87,13 +111,14 @@ const RatingSchema = new Schema<TRating>(
   },
   { timestamps: true }
 );
+
 RatingSchema.index({ noteId: 1, userEmail: 1 }, { unique: true });
 
 export const Rating =
   (mongoose.models.Rating as mongoose.Model<TRating>) ??
   mongoose.model<TRating>("Rating", RatingSchema);
 
-/* ------------ Comment ------------ */
+/* ===================== COMMENT ===================== */
 export type TComment = {
   noteId: mongoose.Types.ObjectId | string;
   userEmail: string;
@@ -104,6 +129,7 @@ export type TComment = {
   createdAt: Date;
   updatedAt: Date;
 };
+
 const CommentSchema = new Schema<TComment>(
   {
     noteId: { type: Schema.Types.ObjectId, ref: "Note", index: true, required: true },
@@ -115,6 +141,8 @@ const CommentSchema = new Schema<TComment>(
   },
   { timestamps: true }
 );
+
+CommentSchema.index({ noteId: 1, createdAt: -1 });
 
 export const Comment =
   (mongoose.models.Comment as mongoose.Model<TComment>) ??
