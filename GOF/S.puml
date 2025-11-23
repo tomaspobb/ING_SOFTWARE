@@ -1,0 +1,41 @@
+@startuml
+skinparam dpi 180
+skinparam classAttributeIconSize 0
+
+interface IEstrategiaOrdenamiento {
+    +ordenar(listaApuntes: List<Apunte>): List<Apunte>
+}
+
+class OrdenarPorFechaReciente {
+    +ordenar(listaApuntes): List<Apunte>
+}
+
+class OrdenarPorRating {
+    +ordenar(listaApuntes): List<Apunte>
+}
+
+class OrdenarPorDescargas {
+    +ordenar(listaApuntes): List<Apunte>
+}
+
+class BuscadorApuntes {
+    -estrategia: IEstrategiaOrdenamiento
+    +setEstrategia(e: IEstrategiaOrdenamiento): void
+    +obtenerApuntes(): List<Apunte>
+}
+
+class Apunte {
+    +titulo: String
+    +fechaSubida: Date
+    +ratingPromedio: float
+    +descargas: int
+}
+
+IEstrategiaOrdenamiento <|.. OrdenarPorFechaReciente
+IEstrategiaOrdenamiento <|.. OrdenarPorRating
+IEstrategiaOrdenamiento <|.. OrdenarPorDescargas
+
+BuscadorApuntes --> IEstrategiaOrdenamiento
+BuscadorApuntes --> Apunte : usa >
+
+@enduml

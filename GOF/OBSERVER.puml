@@ -1,0 +1,22 @@
+@startuml
+
+class Apunte {
+  +estado
+  +agregarObserver()
+  +eliminarObserver()
+  +notificar()
+}
+
+interface Observer {
+  +actualizar(apunte)
+}
+
+class UsuarioAutor
+class FeedPrincipal
+class SistemaRanking
+
+Apunte --> Observer : notifica cambios
+Observer <|-- UsuarioAutor
+Observer <|-- FeedPrincipal
+Observer <|-- SistemaRanking
+@enduml

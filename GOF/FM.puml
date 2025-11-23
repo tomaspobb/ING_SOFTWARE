@@ -1,0 +1,24 @@
+@startuml
+skinparam classAttributeIconSize 0
+interface IContenido
+class Apunte implements IContenido
+class Comentario implements IContenido
+class Valoracion implements IContenido
+
+abstract class ContenidoFactory {
+  +crear(tipo: String, datos): IContenido
+}
+
+class ProductFactory extends ContenidoFactory
+
+class ControladorContenido {
+  +publicar(datos): void
+}
+
+ControladorContenido --> ContenidoFactory : usa
+ContenidoFactory <|-- ProductFactory
+ProductFactory -> IContenido : crear()
+IContenido <|.. Apunte
+IContenido <|.. Comentario
+IContenido <|.. Valoracion
+@enduml
