@@ -1,76 +1,104 @@
 @startuml
-' ===== Estilo minimalista =====
+' ===== ESTILO CLEAN & FLAT =====
 skinparam dpi 200
 skinparam shadowing false
-skinparam linetype ortho
-skinparam roundcorner 12
+skinparam roundcorner 15
 skinparam classBackgroundColor #FFFFFF
 skinparam classBorderColor #2E3A59
 skinparam classFontColor #1E293B
-skinparam classFontSize 15
-skinparam classAttributeFontColor #475569
-skinparam classAttributeFontSize 12
-skinparam ArrowColor #475569
-skinparam ArrowFontColor #475569
-skinparam ArrowFontSize 13
-skinparam ArrowThickness 1.2
-skinparam titleFontColor #1E293B
-skinparam titleFontSize 19
+skinparam classFontSize 16
+skinparam arrowColor #475569
+skinparam arrowThickness 1.5
+skinparam arrowFontSize 13
+' Ortho: Lineas rectas tipo tubería
+skinparam linetype ortho
 
-left to right direction
+' Espaciado generoso para evitar choques
+skinparam nodesep 80
+skinparam ranksep 100
 
-' ===== Clases =====
+' NOTA: Quitamos "left to right direction" para tener control total
+' de qué va arriba y qué va abajo, pero construimos el flujo horizontalmente.
+
+' ===== CLASES =====
 class Usuario {
-  + id
-  + nombre
-  + emailInstitucional
-  + esAdmin
-}
-
-class Apunte {
-  + titulo
-  + descripcion
-  + fechaSubida
-  + estado
+    + id
+    + nombre
+    + emailInstitucional
+    + esAdmin
 }
 
 class Comentario {
-  + texto
-  + fecha
+    + texto
+    + fecha
+}
+
+class Apunte {
+    + titulo
+    + descripcion
+    + fechaSubida
+    + estado
 }
 
 class Valoracion {
-  + puntaje
-  + fecha
+    + puntaje
+    + fecha
+}
+
+class Administrador {
 }
 
 class DecisionModeracion {
-  + decision
-  + motivo
-  + fecha
+    + decision
+    + motivo
+    + fecha
 }
 
-class Administrador
-Usuario <|-- Administrador
+' ===== ESTRUCTURA DEL LAYOUT (La Magia) =====
+' 1. Columna Izquierda: Comentario Arriba, Usuario Abajo
+Comentario -[hidden]down-> Usuario
 
-' ===== Relaciones =====
+' 2. Usuario conecta horizontalmente con Administrador (para herencia limpia)
+Usuario -[hidden]right-> Administrador
 
-Usuario "1" --> "0..*" Apunte : crea
+' 3. El contenido principal (Apunte) al centro
+Comentario -[hidden]right-> Apunte
 
-Apunte "1" --> "0..*" Comentario : contiene
-Comentario "0..*" --> "1" Usuario : escrito por
+' 4. Valoración arriba de Apunte
+Apunte -[hidden]up-> Valoracion
 
-Apunte "1" --> "0..*" Valoracion : recibe
-Valoracion "0..*" --> "1" Usuario : emitida por
+' 5. Decision a la derecha de todo
+Apunte -[hidden]right-> DecisionModeracion
 
-Administrador "1" --> "0..*" DecisionModeracion : aplica
-DecisionModeracion --> Apunte : modifica
 
-' Forzar layout limpio horizontal (no visibles)
-Usuario -[hidden]- Apunte
-Apunte -[hidden]- Comentario
-Comentario -[hidden]- Valoracion
-Apunte -[hidden]- DecisionModeracion
-Administrador -[hidden]- DecisionModeracion
+' ===== RELACIONES =====
+
+' -- Zona Izquierda (Ciclo Comentario-Usuario) --
+' La flecha baja directo de Comentario a Usuario
+Comentario "0..*" -down-> "1" Usuario : escrito por
+
+' -- Zona Central (Apunte) --
+' Usuario crea apunte (hacia la derecha)
+Usuario "1" -right-> "0..*" Apunte : crea
+
+' Apunte contiene comentario (hacia la izquierda, vuelta corta)
+Apunte "1" -left-> "0..*" Comentario : contiene
+
+' -- Zona Arriba (Valoración) --
+' Valoracion cae sobre apunte
+Valoracion "0..*" -down-> "1" Apunte : recibe
+' Valoracion conecta con usuario (diagonal lejana o por arriba)
+Valoracion "0..*" -left-> "1" Usuario : emitida por
+
+' -- Zona Abajo/Derecha (Moderación) --
+' Herencia (Admin debajo o al lado de Usuario)
+Usuario <|-right- Administrador
+
+' Admin aplica decision
+Administrador "1" -right-> "0..*" DecisionModeracion : aplica
+
+' Decision modifica cosas (Flechas suben)
+DecisionModeracion -up-> Apunte : modifica
+DecisionModeracion -up-> Comentario : modifica
 
 @enduml

@@ -1,4 +1,29 @@
 @startuml
+' ===== Estilo limpio con colores suaves =====
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 15
+skinparam linetype ortho
+
+skinparam actorStyle awesome
+skinparam actorBorderColor #1E293B
+skinparam actorFontColor  #1E293B
+skinparam actorFontSize   14
+skinparam actorBackgroundColor #FFFFFF
+
+skinparam usecaseBackgroundColor #F8FAFC
+skinparam usecaseBorderColor     #1E293B
+skinparam usecaseFontColor       #111827
+skinparam usecaseFontSize        13
+
+skinparam rectangleBackgroundColor #E5E7EB
+skinparam rectangleBorderColor     #1F2933
+skinparam rectangleFontColor       #111827
+skinparam rectangleFontSize        14
+
+skinparam ArrowColor     #4B5563
+skinparam ArrowThickness 1.2
+
 left to right direction
 
 actor Estudiante
