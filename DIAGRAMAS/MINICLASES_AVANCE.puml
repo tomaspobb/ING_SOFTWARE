@@ -1,26 +1,25 @@
 @startuml
-' ===== Estilo visual mejorado para presentación Notivium =====
+' ===== Estilo minimalista =====
 skinparam dpi 200
 skinparam shadowing false
 skinparam linetype ortho
-skinparam roundcorner 20
-skinparam classBackgroundColor #F8FAFC
-skinparam classBorderColor #334155
-skinparam classArrowColor #64748B
+skinparam roundcorner 12
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #2E3A59
 skinparam classFontColor #1E293B
-skinparam classFontSize 16
-skinparam ArrowThickness 1.2
-skinparam ArrowFontColor #334155
-skinparam ArrowFontSize 14
+skinparam classFontSize 15
 skinparam classAttributeFontColor #475569
-skinparam classAttributeFontSize 13
+skinparam classAttributeFontSize 12
+skinparam ArrowColor #475569
+skinparam ArrowFontColor #475569
+skinparam ArrowFontSize 13
+skinparam ArrowThickness 1.2
 skinparam titleFontColor #1E293B
-skinparam titleFontSize 18
-
-title **Identificación de Clases y Relaciones — Notivium**
+skinparam titleFontSize 19
 
 left to right direction
 
+' ===== Clases =====
 class Usuario {
   + id
   + nombre
@@ -51,17 +50,27 @@ class DecisionModeracion {
   + fecha
 }
 
-class Administrador {
-  <<extends>> Usuario
-}
+class Administrador
+Usuario <|-- Administrador
 
-' ==== Relaciones ====
+' ===== Relaciones =====
+
 Usuario "1" --> "0..*" Apunte : crea
+
 Apunte "1" --> "0..*" Comentario : contiene
+Comentario "0..*" --> "1" Usuario : escrito por
+
 Apunte "1" --> "0..*" Valoracion : recibe
+Valoracion "0..*" --> "1" Usuario : emitida por
+
 Administrador "1" --> "0..*" DecisionModeracion : aplica
 DecisionModeracion --> Apunte : modifica
-Comentario --> Usuario : escrito por
-Valoracion --> Usuario : emitida por
+
+' Forzar layout limpio horizontal (no visibles)
+Usuario -[hidden]- Apunte
+Apunte -[hidden]- Comentario
+Comentario -[hidden]- Valoracion
+Apunte -[hidden]- DecisionModeracion
+Administrador -[hidden]- DecisionModeracion
 
 @enduml

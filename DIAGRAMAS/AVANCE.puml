@@ -1,6 +1,5 @@
 @startuml
 left to right direction
-title Notivium — Estudiante vs. Administrador
 
 actor Estudiante
 actor Administrador
