@@ -117,22 +117,6 @@ export default function RankingPage() {
                 </option>
               ))}
             </select>
-
-            {/* Vista */}
-            <div className="btn-group" role="group" aria-label="view">
-              <button
-                className={`btn btn-sm ${view === "grid" ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setView("grid")}
-              >
-                <LayoutGrid size={14} className="me-1" /> Grid
-              </button>
-              <button
-                className={`btn btn-sm ${view === "list" ? "btn-primary" : "btn-outline-secondary"}`}
-                onClick={() => setView("list")}
-              >
-                <List size={14} className="me-1" /> Lista
-              </button>
-            </div>
           </div>
         </div>
       </div>
