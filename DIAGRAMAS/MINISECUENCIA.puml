@@ -1,23 +1,80 @@
 @startuml
-title Secuencia resumida: Valorar Apunte
 
+' ====== ESTILO GENERAL ======
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam linetype ortho
+
+' ====== ACTORES ======
+skinparam actorStyle awesome
+skinparam actorBorderColor #1E293B
+skinparam actorFontColor  #1E293B
+skinparam actorFontSize   14
+skinparam actorBackgroundColor #FFFFFF
+
+' ====== PARTICIPANTES ======
+skinparam participantBackgroundColor #F8FAFC
+skinparam participantBorderColor     #1E293B
+skinparam participantFontColor       #111827
+skinparam participantFontSize        13
+
+' ====== BASE DE DATOS ======
+skinparam databaseBackgroundColor #E5E7EB
+skinparam databaseBorderColor     #1E293B
+
+' Flechas
+skinparam ArrowColor     #4B5563
+skinparam ArrowThickness 1.2
+
+' Arregla ancho del bloque ALT (para que el texto no se corte)
+skinparam sequenceBoxWidth 260
+
+
+' ====== PARTICIPANTES ======
 actor Estudiante as E
-boundary UI
-control ControladorContenido as CC
-control RepoValoraciones as RV
-entity Apunte as AP
-database DB
+participant "Web UI" as UI
+participant "ControladorContenido" as CC
+participant "RepoValoraciones" as RV
+participant "Apunte" as AP
+database "DB (MongoDB)" as DB
+
+
+' ====== SECUENCIA ======
 
 E -> UI : clic "Valorar (4★)"
 UI -> CC : valorar(apunteId, puntaje, usuario)
-CC -> RV : existeDe(usuario, apunteId)?
-RV -> DB : SELECT ...
-DB --> RV : resultado
-alt no existe
-  CC -> RV : save(Valoracion)
-  RV -> DB : INSERT ...
-  CC -> AP : calcularPromedio()
+
+CC -> RV : buscarValoracion(usuario, apunteId)
+RV -> DB : buscarPorUsuarioYApunte(usuario, apunteId)
+DB --> RV : valoración | null
+RV --> CC : valoración | null
+
+
+' ====== BLOQUE ALT ======
+
+alt no existe valoración previa
+  CC -> RV : guardarNueva(Valoracion)
+  RV -> DB : insertar(Valoracion)
+else existe valoración previa
+  CC -> RV : actualizar(Valoracion)
+  RV -> DB : actualizar(Valoracion)
 end
-CC --> UI : confirmación
+
+
+
+' ====== CALCULAR PROMEDIO ======
+
+CC -> AP : calcularPromedio()
+AP -> DB : calcularPromedioPorApunte(apunteId)
+DB --> AP : nuevoPromedio
+AP --> CC : nuevoPromedio
+
+
+' ====== CONFIRMACIÓN ======
+
+CC --> UI : confirmación(nuevoPromedio)
+' (La Web UI actualiza mensaje y estrellas en pantalla)
+
 
 @enduml

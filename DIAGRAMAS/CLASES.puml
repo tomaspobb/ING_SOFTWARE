@@ -1,19 +1,24 @@
 @startuml
-title Notivium — Diagrama de Clases (Dominio)
 
-' ——— Estilo
+' ===== ESTILO =====
+skinparam dpi 220
 skinparam shadowing false
+skinparam roundcorner 15
 skinparam linetype ortho
-skinparam classAttributeIconSize 0
-skinparam dpi 180
+
 skinparam class {
   BackgroundColor #F7FAFF
   BorderColor #1D3B53
+  FontColor #111827
 }
-skinparam stereotypeCBackgroundColor #E6F0FF
-skinparam stereotypeCBorderColor #1D3B53
 
-' ——— Enums
+skinparam nodesep 90
+skinparam ranksep 130
+
+hide stereotype
+top to bottom direction
+
+' ===== ENUMS =====
 enum EstadoApunte {
   PENDIENTE
   APROBADO
@@ -25,21 +30,21 @@ enum TipoDecision {
   RECHAZAR
 }
 
-' ——— Clases del dominio
-class Usuario <<entity>> {
+' ===== CLASES =====
+class Usuario {
   +id: UUID
   +nombre: String
   +emailInstitucional: String
   +esAdmin(): Boolean
 }
 
-class Administrador <<entity>> {
-  ' hereda credenciales y datos de Usuario
+class Administrador {
+  ' Especialización de Usuario
 }
 
 Usuario <|-- Administrador
 
-class Apunte <<entity>> {
+class Apunte {
   +id: UUID
   +titulo: String
   +descripcion: String
@@ -47,10 +52,10 @@ class Apunte <<entity>> {
   +estado: EstadoApunte
   --
   +calcularPromedio(): float
-  +cambiarEstado(d: DecisionModeracion): void
+  +cambiarEstado(dm: DecisionModeracion): void
 }
 
-class Comentario <<entity>> {
+class Comentario {
   +id: UUID
   +texto: String
   +fecha: DateTime
@@ -58,36 +63,51 @@ class Comentario <<entity>> {
   +ocultar(): void
 }
 
-class Valoracion <<entity>> {
+class Valoracion {
   +id: UUID
   +puntaje: int  ' [1..5]
   +fecha: DateTime
 }
 
-class DecisionModeracion <<entity>> {
+class DecisionModeracion {
   +id: UUID
   +decision: TipoDecision
   +motivo: String
   +fecha: DateTime
 }
 
-' ——— Relaciones principales (cardinalidades y roles)
-Usuario "1" --> "0..*" Apunte : crea >
-Usuario "1" --> "0..*" Comentario : escribe >
-Usuario "1" --> "0..*" Valoracion : emite >
+' ===== LAYOUT (misma estructura que ya te gustó) =====
+Usuario -[hidden]down- Comentario
+Comentario -[hidden]down- Administrador
 
-Apunte "1" o-- "0..*" Comentario : contiene
-Apunte "1" o-- "0..*" Valoracion : contiene
+Usuario -[hidden]- Apunte
+Apunte -[hidden]down- Valoracion
 
-Administrador "1" --> "0..*" DecisionModeracion : aplica >
-DecisionModeracion "1" --> "1" Apunte : modifica estado
+Apunte -[hidden]- DecisionModeracion
+DecisionModeracion -[hidden]down- TipoDecision
 
-' dueño de comentario/valoración (traza de autoría)
-Comentario "0..*" --> "1" Usuario : autor
-Valoracion "0..*" --> "1" Usuario : autor
+EstadoApunte -[hidden]down- Apunte
 
-' referencias explícitas al apunte (además de la composición)
-Comentario "0..*" --> "1" Apunte
-Valoracion "0..*" --> "1" Apunte
+' ===== RELACIONES =====
+
+' Usuario crea apuntes (flecha hacia Apunte)
+Usuario "1" -right-> "0..*" Apunte : crea
+
+' Apunte contiene comentarios y valoraciones
+Apunte "1" -left-> "0..*" Comentario : contiene
+Apunte "1" -down-> "0..*" Valoracion : contiene
+
+' Usuario con comentarios y valoraciones (flechas hacia Comentario/Valoracion)
+Usuario "1" -down-> "0..*" Comentario : autor
+Usuario "1" -down-> "0..*" Valoracion : emite
+
+' Moderación
+Administrador "1" -right-> "0..*" DecisionModeracion : aplica\n
+DecisionModeracion "1" -up-> "1" Apunte : modifica estado
+DecisionModeracion "0..*" -left-> "0..*" Comentario : registra decisión
+
+' Enums
+Apunte --> EstadoApunte
+DecisionModeracion --> TipoDecision
 
 @enduml

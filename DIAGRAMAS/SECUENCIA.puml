@@ -1,40 +1,82 @@
 @startuml
-title Notivium — Diagrama de Secuencia: Publicar y Moderar Apunte
 
-actor Estudiante
-actor Administrador
+' ====== ESTILO GENERAL ======
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam linetype ortho
+
+' ====== ACTORES ======
+skinparam actorStyle awesome
+skinparam actorBorderColor #1E293B
+skinparam actorFontColor  #1E293B
+skinparam actorFontSize   14
+skinparam actorBackgroundColor #FFFFFF
+
+' ====== PARTICIPANTES ======
+skinparam participantBackgroundColor #F8FAFC
+skinparam participantBorderColor     #1E293B
+skinparam participantFontColor       #111827
+skinparam participantFontSize        13
+
+' ====== BASE DE DATOS ======
+skinparam databaseBackgroundColor #E5E7EB
+skinparam databaseBorderColor     #1E293B
+
+skinparam ArrowColor     #4B5563
+skinparam ArrowThickness 1.2
+
+
+' ====== PARTICIPANTES ======
+actor Estudiante as E
+actor Administrador as A
 
 participant "Web UI (Next.js)" as Web
 participant "API Gateway" as API
 participant "Servicio de Contenido" as SC
 participant "Servicio de Moderación" as SM
-participant "Repositorio de Apuntes (MongoDB)" as Repo
+database "Repositorio de Apuntes\n(MongoDB)" as Repo
 
+
+' ==========================
+'   PUBLICACIÓN DEL APUNTE
+' ==========================
 == Publicación del Apunte ==
-Estudiante -> Web : Subir archivo + metadatos
+
+E -> Web : Subir archivo + metadatos
 Web -> API : POST /apuntes (JSON + Blob)
 API -> SC : CrearApunte(datos, archivo)
-SC -> Repo : Guardar apunte (estado = PENDIENTE)
-Repo --> SC : Confirmación de guardado
-SC --> API : Retornar ID de apunte creado
-API --> Web : Mostrar mensaje “Apunte enviado para revisión”
+SC -> Repo : guardar(apunte,\nestado=PENDIENTE)
+Repo --> SC : confirmación
+SC --> API : ID del apunte creado
+API --> Web : “Apunte enviado para revisión”
 
+
+' ==========================
+'     PROCESO DE MODERACIÓN
+' ==========================
 == Proceso de Moderación ==
-Administrador -> Web : Revisar apunte pendiente
+
+A -> Web : Revisar apuntes pendientes
 Web -> API : GET /apuntes?estado=PENDIENTE
 API -> SM : ObtenerApuntesPendientes()
-SM -> Repo : Buscar apuntes con estado = PENDIENTE
-Repo --> SM : Lista de apuntes pendientes
-SM --> API : Retornar lista de revisión
-API --> Web : Mostrar apuntes al administrador
+SM -> Repo : buscar(por estado=PENDIENTE)
+Repo --> SM : lista de apuntes pendientes
+SM --> API : lista de revisión
+API --> Web : mostrar apuntes al administrador
 
+
+' ==========================
+'    DECISIÓN DE MODERACIÓN
+' ==========================
 == Decisión de Moderación ==
-Administrador -> Web : Aprobar o Rechazar apunte
-Web -> API : PUT /apuntes/{id}/decisión
+
+A -> Web : Aprobar/Rechazar apunte
+Web -> API : PUT /apuntes/{id}/decision
 API -> SM : AplicarDecision(id, decision)
-SM -> Repo : Actualizar estadoApunte = APROBADO o RECHAZADO
-Repo --> SM : Confirmación de actualización
-SM --> API : Notificar resultado
-API --> Web : Mostrar mensaje de confirmación
+SM -> Repo : actualizarEstado(id,\nAPROBADO/RECHAZADO)
+Repo --> SM : confirmación
+SM --> API : resultado
+API --> Web : mostrar mensaje de confirmación
 
 @enduml

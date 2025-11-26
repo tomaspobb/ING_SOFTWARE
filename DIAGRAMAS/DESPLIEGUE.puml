@@ -1,33 +1,91 @@
 @startuml
-title Notivium — Diagrama de Despliegue
-skinparam shadowing false
-skinparam backgroundColor #FFFFFF
 
-node "Usuario Estudiante/Admin" as User {
+skinparam backgroundColor #FFFFFF
+skinparam shadowing true
+skinparam roundcorner 12
+skinparam linetype ortho
+
+skinparam nodesep 140
+skinparam ranksep 140
+
+skinparam node {
+  BackgroundColor #F8FAFC
+  BorderColor #1E293B
+  FontColor #0F172A
+  FontSize 12
+}
+
+skinparam artifact {
+  BackgroundColor #EEF2F7
+  BorderColor #1E293B
+  FontColor #0F172A
+  FontSize 11
+}
+
+skinparam database {
+  BackgroundColor #E5E7EB
+  BorderColor #1E293B
+  FontColor #0F172A
+}
+
+skinparam ArrowColor #4B5563
+skinparam ArrowThickness 1.2
+
+left to right direction
+
+' ===== NODOS PRINCIPALES =====
+node "Usuario Estudiante/Admin" as Usuario {
   artifact "Navegador Web" as Browser
 }
 
-node "Frontend\n(Vercel Hosting)" as Front {
-  artifact "Next.js App" as FE
+' Nuevo nodo: CDN/Proxy (Cloudflare)
+node "Cloudflare (CDN / Reverse Proxy)" as CDN
+
+node "Frontend\n(Next.js en Vercel)" as Frontend {
+  artifact "Aplicación Next.js" as NextApp
 }
 
-node "Backend API\n(Node.js / Express / Docker)" as BE {
-  artifact "Servicios REST" as API
-  artifact "Controladores GRASP" as Controllers
-  artifact "Repositorios (DAO)" as Repos
+node "Vercel Blob Storage\n(Archivos PDF)" as Blob
+
+node "Microsoft Entra ID\n(SSO / OIDC)" as Entra
+
+node "Backend API\n(Node.js / Express / Docker)" as Backend {
+  artifact "Controladores" as Controllers
+  artifact "Servicios REST" as ServREST
+  artifact "Repositorios (DAO)" as DAO
 }
 
-database "MongoDB Atlas Cluster" as DB
-node "Vercel Blob Storage\n(Archivos PDF / Imágenes)" as Storage
-node "Microsoft Entra ID\n(Autenticación SSO)" as SSO
-node "CDN / Proxy\n(Cloudflare)" as CDN
+database "MongoDB Atlas\nCluster" as Mongo
 
-' Conexiones
-User --> CDN : HTTPS
-CDN --> Front : HTTPS
-Front --> BE : HTTPS (API REST)
-BE --> DB : Conexión TLS segura
-BE --> Storage : Subida / Descarga
-BE --> SSO : Validación OIDC / Tokens
+' ===== LAYOUT OCULTO PARA POSICIÓN =====
+Usuario -[hidden]-> CDN
+CDN -[hidden]-> Frontend
+Frontend -[hidden]-> Blob
+Blob -[hidden]-> Backend
+
+Frontend -[hidden]down-> Entra
+Entra -[hidden]-> Backend
+
+Backend -[hidden]down-> Mongo
+
+' ===== CONEXIONES REALES =====
+
+' Usuario -> CDN
+Usuario -up-> CDN : \nHTTPS \n(Solicitudes pasan por Cloudflare)
+
+' CDN -> Frontend
+CDN -up-> Frontend : HTTPS
+
+' Frontend -> Blob
+Frontend -down-> Blob : Subida/descarga\narchivos PDF
+
+' Frontend -> Backend
+Frontend -right-> Backend : HTTPS\n(API REST)
+
+' Backend -> Entra
+Backend -down-> Entra : Validación\nOIDC / Tokens
+
+' Backend -> Mongo
+Backend -up-> Mongo : Conexión TLS\nsegura
 
 @enduml

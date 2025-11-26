@@ -1,61 +1,109 @@
 @startuml
-title Notivium — Diagrama de Componentes
-skinparam dpi 300
-skinparam componentStyle rectangle
+
+skinparam backgroundColor #FFFFFF
 skinparam shadowing false
-skinparam backgroundColor #FDFDFD
+skinparam roundcorner 12
+skinparam linetype ortho
+
+skinparam componentStyle rectangle
+skinparam ArrowColor #4B5563
+skinparam ArrowThickness 1.2
+
+skinparam package {
+  BackgroundColor #FFFFFF
+  BorderColor #CBD5E1
+}
+
 skinparam component {
-  BackgroundColor<<frontend>> #DDEAF9
-  BackgroundColor<<backend>> #EAF7EA
-  BackgroundColor<<database>> #FFF4E3
-  BackgroundColor<<external>> #F3E8FF
+  BackgroundColor #F8FAFC
+  BorderColor #1E293B
+  FontColor #111827
+  FontSize 12
 }
 
-package "Frontend (Next.js + React)" {
-  [Web UI] <<frontend>>
-  [Gestor de Sesión (NextAuth)] <<frontend>>
-  [Gestor de Subida de Archivos] <<frontend>>
+skinparam nodesep 120
+skinparam ranksep 155
+
+' ====================================
+' FRONTEND
+' ====================================
+package "Frontend (Next.js + React)" as FE {
+
+  component "Web UI" as WebUI
+  component "Gestor de Sesión\n(NextAuth)" as SessionUI
+  component "Gestor de Archivos\n(Cliente Blob)" as UploadUI
 }
 
-package "Backend (Node.js / Express / API REST)" {
-  [API Gateway] <<backend>>
-  [Servicio de Contenido] <<backend>>
-  [Servicio de Moderación] <<backend>>
-  [Servicio de Valoración] <<backend>>
-  [Servicio de Autenticación] <<backend>>
+' ====================================
+' SERVICIOS EXTERNOS
+' ====================================
+package "Servicios Externos" as Ext {
+
+  component "Vercel Blob Storage\n(Archivos)" as VercelBlob
+  component "Microsoft Entra ID\n(SSO / OIDC)" as Entra
 }
 
-package "Persistencia (MongoDB Atlas)" {
-  [Repositorio de Apuntes] <<database>>
-  [Repositorio de Comentarios] <<database>>
-  [Repositorio de Valoraciones] <<database>>
-  [Repositorio de Usuarios] <<database>>
+' ====================================
+' BACKEND
+' ====================================
+package "Backend (Node.js / Express / API REST)" as BE {
+
+  component "API Gateway" as APIGW
+  component "Servicio de Contenido" as SContenido
+  component "Servicio de Moderación" as SModeracion
+  component "Servicio de Valoración" as SValoracion
+  component "Servicio de Autenticación" as SAuth
 }
 
-package "Servicios Externos" {
-  [Microsoft Entra ID (SSO)] <<external>>
-  [Vercel Blob Storage (Archivos)] <<external>>
+' ====================================
+' BASE DE DATOS
+' ====================================
+package "Persistencia (MongoDB Atlas)" as DBLayer {
+
+  component "Repositorio de Comentarios" as RepoComentarios
+  component "Repositorio de Apuntes" as RepoApuntes
+  component "Repositorio de Valoraciones" as RepoValoraciones
 }
 
-' --- Relaciones ---
-[Web UI] --> [API Gateway] : Peticiones HTTP/JSON
-[Gestor de Sesión (NextAuth)] --> [Microsoft Entra ID (SSO)] : Login / Tokens OIDC
-[Gestor de Subida de Archivos] --> [Vercel Blob Storage (Archivos)] : Subida / Descarga PDF
+node "MongoDB Atlas" as Mongo
 
-[API Gateway] --> [Servicio de Contenido]
-[API Gateway] --> [Servicio de Moderación]
-[API Gateway] --> [Servicio de Valoración]
-[API Gateway] --> [Servicio de Autenticación]
 
-[Servicio de Contenido] --> [Repositorio de Apuntes]
-[Servicio de Contenido] --> [Repositorio de Comentarios]
-[Servicio de Valoración] --> [Repositorio de Valoraciones]
-[Servicio de Autenticación] --> [Repositorio de Usuarios]
-[Servicio de Moderación] --> [Repositorio de Apuntes]
+' ====================================
+' RELACIONES
+' ====================================
 
-[Repositorio de Apuntes] --> [MongoDB Atlas]
-[Repositorio de Comentarios] --> [MongoDB Atlas]
-[Repositorio de Valoraciones] --> [MongoDB Atlas]
-[Repositorio de Usuarios] --> [MongoDB Atlas]
+' ---- Web UI → Backend ----
+WebUI -down-> APIGW : HTTP/JSON\n(metadatos + URL PDF)
+
+' ---- Sesión → Backend ----
+SessionUI -down-> APIGW : Autenticación\n(OIDC)
+
+' ---- Archivos → Vercel Blob ----
+UploadUI -right-> VercelBlob : Subida/descarga\narchivos PDF
+
+' ---- Backend → Servicios internos ----
+APIGW --> SContenido
+APIGW --> SModeracion
+APIGW --> SValoracion
+APIGW --> SAuth
+
+' ---- Servicios → Repositorios ----
+SContenido --> RepoApuntes
+SContenido --> RepoComentarios
+
+SModeracion --> RepoApuntes
+SModeracion --> RepoComentarios
+SModeracion --> RepoValoraciones
+
+SValoracion --> RepoValoraciones
+SValoracion --> RepoApuntes
+
+' ---- Repositorios → Mongo ----
+RepoComentarios --> Mongo
+RepoApuntes --> Mongo
+RepoValoraciones --> Mongo
+
+' ---- Autenticación → Entra ID ----
+SAuth --> Entra : Validar identidad\n(SSO/OIDC)
 
 @enduml
