@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { dbConnect, Rating, Note, toObjectId } from "@/lib/models";
 import mongoose from "mongoose";
 
-// NextAuth (ajusta a tu proyecto)
+// NextAuth
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+// CAMBIO 1: El tipo de params ahora debe ser una Promesa
+export async function POST(
+  req: Request, 
+  { params }: { params: Promise<{ id: string }> } 
+) {
   const body = await req.json().catch(() => null);
   const value = Number(body?.value);
 
@@ -18,7 +22,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   try {
     await dbConnect();
-    const oid = toObjectId(params.id);
+
+    // CAMBIO 2: Debes esperar a que params se resuelva
+    const { id } = await params; 
+    
+    const oid = toObjectId(id);
     if (!oid) return NextResponse.json({ error: "INVALID_ID" }, { status: 400 });
 
     // usuario
